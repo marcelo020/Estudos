@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartas em Leque</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #282c34;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            position: relative;
+            width: 500px;
+            height: 300px;
+        }
+        .card {
+            width: 150px;
+            height: 220px;
+            position: absolute;
+            transform-origin: bottom center;
+            transition: transform 0.5s;
+        }
+        .flipped {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="game-board"></div>
+    
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const cardImages = ['AH', '2H', '3H', '4H', '5H', '6H', '7H'];
+        
+        cardImages.forEach((card, index) => {
+            const cardElement = document.createElement('img');
+            cardElement.classList.add('card');
+            cardElement.src = 'https:/deckofcardsapi.com/static/img/back.png';
+            cardElement.dataset.value = card;
+            
+            const angle = (index - (cardImages.length - 1) / 2) * 15;
+            cardElement.style.transform = `rotate(${angle}deg)`;
+            cardElement.style.left = '50%';
+            cardElement.style.top = '50%';
+            cardElement.style.transformOrigin = 'bottom center';
+            
+            cardElement.addEventListener('click', () => {
+                if (!cardElement.classList.contains('flipped')) {
+                    cardElement.classList.add('flipped');
+                    cardElement.src = `https://deckofcardsapi.com/static/img/${card}.png`;
+                } else {
+                    cardElement.classList.remove('flipped');
+                    cardElement.src = 'https://deckofcardsapi.com/static/img/back.png';
+                }
+            });
+            
+            gameBoard.appendChild(cardElement);
+        });
+    </script>
+</body>
+</html>

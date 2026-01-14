@@ -1,0 +1,28 @@
+@charset "UTF-08";
+
+.main {
+    margin: 0 auto;
+    width: 300px;
+    background-color: aqua;
+}
+
+.container {
+    max-width: 600px;
+    height: 400px;
+    border: 1px solid #000;
+    justify-content: center;
+    display: flex;
+    flex-direction: row;
+    flex-direction: wrap;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.item {
+    text-align: center;
+    background: #cf9f9fb2;
+    margin: 5px;
+    padding: 5px;
+    height: 30px;
+    width: calc( 33.3333% - 20px);
+}
