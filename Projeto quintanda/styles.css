@@ -1,0 +1,138 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body{
+    background:#f1f5f9;
+    display:flex;
+}
+
+.carrinho-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px;
+    background:#f8fafc;
+    border-radius:8px;
+    margin-bottom:8px;
+}
+
+
+.sidebar{
+    width:220px;
+    height:100vh;
+    background:#1e293b;
+    color:white;
+    padding:20px;
+}
+
+main{
+    flex:1;
+    padding:30px;
+}
+.main{
+    flex:1;
+    padding:30px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+/* Variáveis e estilos unificados de botão */
+:root{
+    --primary:#8a6d81;
+    --primary-hover:#7d5a6f;
+    --muted:#334155;
+    --muted-hover:#475569;
+    --danger:#b91c1c;
+    --danger-hover:#7f1d1d;
+    --btn-radius:8px;
+    --btn-transition:0.18s;
+}
+
+.btn{
+    display:inline-block;
+    padding:8px 12px;
+    border-radius:var(--btn-radius);
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:transform var(--btn-transition) ease, background-color var(--btn-transition) ease, box-shadow var(--btn-transition) ease;
+    font-weight:600;
+    background:#f1f5f9;
+    color:#111827;
+}
+
+.btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 20px rgba(0,0,0,0.08);
+}
+
+.btn-primary{ background:var(--primary); color:white; }
+.btn-primary:hover{ background:var(--primary-hover); }
+
+.btn-sidebar{ width:100%; background:var(--muted); color:white; padding:10px; margin-bottom:10px; border-radius:6px; }
+.btn-sidebar:hover{ background:var(--muted-hover); }
+
+.btn-add{ background:#9b7890; color:white; width:100%; padding:8px; border-radius:8px; }
+.btn-add:hover{ background:#94838c; }
+
+.btn-admin{ background:var(--muted); color:white; margin-top:5px; }
+.btn-danger{ background:var(--danger); color:white; margin-top:5px; margin-left:6px; }
+.btn-danger:hover{ background:var(--danger-hover); }
+
+input,select{
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    margin-bottom:10px;
+    width:100%;
+}
+.hidden{
+    display:none;
+}
+.produtos-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap:20px;
+}
+
+.produto-card{
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
+
+.produto-card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 12px 25px rgba(0,0,0,0.15);
+}
+
+.produto-card img{
+    width:100%;
+    height:150px;
+    object-fit:cover;
+}
+
+.produto-info{
+    padding:15px;
+}
+
+.produto-info h4{
+    margin-bottom:8px;
+}
+
+.produto-info .btn-add{
+    width:100%;
+}
+
+

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lanche Feliz - Sistema Profissional</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>🍔 Lanche Feliz</h2>
+    <button class="btn btn-sidebar" onclick="mostrar('vendas')">🛒 Nova Venda</button>
+    <button id="btnDashboard" class="btn btn-sidebar hidden" onclick="mostrar('dashboard')">📊 Dashboard</button>
+    <button id="btnAreaCliente" class="btn btn-sidebar" onclick="mostrar('cliente-home')">👤 Área Cliente</button>
+    <button class="btn btn-sidebar" onclick="mostrar('login')">🔒 Login Interno</button>
+    <button class="btn btn-sidebar" onclick="logout()">🚪 Sair</button>
+</div>
+
+<div class="main">
+
+<div id="clienteInfo" class="card hidden" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <div>Olá, <strong id="clienteNome"></strong></div>
+    <div>
+        <button class="btn" onclick="mostrar('vendas')">Ver Cardápio</button>
+        <button class="btn" onclick="listarPedidosCliente()">Meus Pedidos</button>
+        <button class="btn" onclick="logout()">Sair</button>
+    </div>
+</div>
+
+<!-- LOGIN INTERNO (admin / operador) -->
+<div id="login" class="hidden">
+    <h3>Login</h3>
+    <input type="text" id="user" placeholder="Usuário">
+    <input type="password" id="pass" placeholder="Senha">
+<button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
+    <p id="erro" style="color:red;"></p>
+</div>
+
+<!-- AREA CLIENTE (home) -->
+<div id="cliente-home" class="card hidden">
+    <h3>Área do Cliente</h3>
+    <p>Se você já tem conta, faça login. Se não, cadastre-se.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="mostrar('cliente-login')">Entrar</button>
+        <button class="btn" onclick="mostrar('cliente-cadastro')">Cadastrar</button>
+    </div>
+</div>
+
+<!-- CLIENTE: LOGIN -->
+<div id="cliente-login" class="card hidden">
+    <h3>Login Cliente</h3>
+    <input type="email" id="clienteEmail" placeholder="E-mail">
+    <input type="password" id="clienteSenha" placeholder="Senha">
+    <button class="btn btn-primary" onclick="fazerLoginCliente()">Entrar como Cliente</button>
+    <p id="erroCliente" style="color:red;"></p>
+</div>
+
+<!-- CLIENTE: CADASTRO -->
+<div id="cliente-cadastro" class="card hidden">
+    <h3>Cadastro Cliente</h3>
+    <input type="text" id="clienteNomeInput" placeholder="Nome completo">
+    <input type="email" id="clienteEmailInput" placeholder="E-mail">
+    <input type="password" id="clienteSenhaInput" placeholder="Senha">
+    <input type="password" id="clienteSenhaConfirm" placeholder="Confirmar senha">
+    <button class="btn btn-primary" onclick="fazerCadastroCliente()">Cadastrar</button>
+    <p id="cadastroMsg" style="color:green;"></p>
+</div>
+
+<!-- CLIENTE: PEDIDOS -->
+<div id="cliente-pedidos" class="card hidden">
+    <h3>Meus Pedidos</h3>
+    <div id="listaPedidosCliente"></div>
+    <button class="btn" onclick="mostrar('vendas')">Voltar ao Cardápio</button>
+</div>
+
+<!-- MENU PRINCIPAL -->
+<div id="menu" class="hidden">
+</div>
+
+<!-- VENDAS -->
+<div id="vendas" class="hidden">
+    <div class="card">
+        <h3>Cardápio</h3>
+        <div id="novoProdutoBox" class="card hidden">
+    <h3>Novo Produto</h3>
+
+    <input type="text" id="novoNome" placeholder="Nome do produto">
+    <input type="number" id="novoPreco" placeholder="Preço" step="0.01">
+    <input type="text" id="novoImg" placeholder="URL da imagem">
+
+            <button class="btn btn-primary" onclick="salvarNovoProduto()">Salvar Produto</button>
+            <button class="btn" onclick="fecharNovoProduto()">Cancelar</button>
+</div>
+
+
+<div id="adminArea" class="hidden">
+    <button class="btn btn-primary" onclick="abrirNovoProduto()">
+        ➕ Novo Produto
+    </button>
+</div>
+
+        <div id="listaProdutos"></div>
+    </div>
+
+    <div class="card">
+        <h3>Carrinho</h3>
+        <div id="carrinho"></div>
+        <h4>Total: R$ <span id="total">0.00</span></h4>
+        <button class="btn btn-primary" onclick="irPagamento()">Ir para Pagamento</button>
+    </div>
+</div>
+
+<!-- PAGAMENTO -->
+<div id="pagamento" class="hidden">
+    <h3>Pagamento</h3>
+    <select id="forma">
+        <option value="">Selecione</option>
+        <option>Dinheiro</option>
+        <option>Cartão</option>
+        <option>PIX</option>
+    </select>
+
+    <div id="dinheiroCampo" class="hidden">
+        <input type="number" id="valorRecebido" placeholder="Valor recebido">
+    </div>
+
+    <button class="btn btn-primary" onclick="finalizar()">Finalizar</button>
+    <button class="btn" onclick="mostrar('vendas')">Voltar</button>
+
+    <div id="recibo"></div>
+</div>
+
+
+    <!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+    <h3>Relatório de Vendas</h3>
+    <div id="relatorio"></div>
+    <canvas id="graficoVendas"></canvas>
+    <canvas id="graficoVendasDia" style="margin-top:16px;"></canvas>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
