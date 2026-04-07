@@ -12,7 +12,7 @@ public class estrutura {
     System.out.print("Deseja continuar? [S/N]");
     resp = teclado.next();
     } while (resp.equals("S"));
-
+    System.out.println("A soma de todos os valores é: " + s);
 
     }
 }
