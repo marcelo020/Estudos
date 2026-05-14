@@ -1,0 +1,76 @@
+{
+  "clientes": [
+    {
+      "id": 1777558542463,
+      "nome": "Maria Silva",
+      "email": "maria@teste.com",
+      "senhaHash": "$2a$10$j6KaOz0q55UYBu4W2AanbuebnWznCYY4fr5eR.mSw41xjzVzXmhWW",
+      "criadoEm": "2026-04-30T14:15:42.463Z"
+    },
+    {
+      "id": 1777558921706,
+      "nome": "cliente",
+      "email": "cliente@gmail.com",
+      "senhaHash": "$2a$10$JrhrschmrdTJN/peyw/.6euLvCR.OKn12Bk.E2IHMKnC4fm.qSqWq",
+      "criadoEm": "2026-04-30T14:22:01.706Z"
+    },
+    {
+      "id": 1777559708069,
+      "nome": "teste",
+      "email": "teste@gmail.com",
+      "senhaHash": "$2a$10$DLo/asIgf8iggkiYZr6yMOplv5wwf.Xpfj9lYalFFgrf/BuHqnvw6",
+      "criadoEm": "2026-04-30T14:35:08.069Z"
+    }
+  ],
+  "produtos": [
+    {
+      "id": 1,
+      "nome": "Cafezinho",
+      "preco": 1.5,
+      "img": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300"
+    },
+    {
+      "id": 2,
+      "nome": "Pão com manteiga",
+      "preco": 1.2,
+      "img": "https://3.bp.blogspot.com/-4tzM3_7T-04/WAKzMTezioI/AAAAAAAAB6c/dY8SpoE7-KMJ6-jxup8yE2dysJbTywiAwCLcB/w1200-h630-p-k-no-nu/pao-com-manteiga.jpg"
+    },
+    {
+      "id": 3,
+      "nome": "Misto quente",
+      "preco": 1.75,
+      "img": "https://tse1.mm.bing.net/th/id/OIP.2gQWV_-2OIRqoKrOJI5jSgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
+    },
+    {
+      "id": 4,
+      "nome": "Misto quente com ovo",
+      "preco": 2,
+      "img": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300"
+    },
+    {
+      "id": 5,
+      "nome": "Suco natural",
+      "preco": 2.25,
+      "img": "https://tse2.mm.bing.net/th/id/OIP.W5aNOByZpGdJI2lXRfY6ewHaE3?rs=1&pid=ImgDetMain&o=7&rm=3"
+    },
+    {
+      "id": 6,
+      "nome": "Suco lata",
+      "preco": 3,
+      "img": "https://imagens.jotaja.com/produtos/2ce9bdc0-5e4a-4611-8b1b-be35c7784e15.jpg"
+    },
+    {
+      "id": 7,
+      "nome": "Pão de queijo",
+      "preco": 1,
+      "img": "https://www.panificiomallet.com/storage/app/uploads/public/67d/c17/ef2/67dc17ef2b779369140361.jpg"
+    },
+    {
+      "id": 8,
+      "nome": "Porção pão de queijo",
+      "preco": 2.5,
+      "img": "https://amopaocaseiro.com.br/wp-content/uploads/2022/08/yt-069_pao-de-queijo_receita-840x560.jpg"
+    }
+  ],
+  "vendas": []
+}

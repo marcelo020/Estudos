@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lanche Feliz - Sistema Profissional</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>🍔 Lanche Feliz</h2>
+    <button id="btnVendas" class="btn btn-sidebar hidden" onclick="mostrar('vendas')">🛒 Nova Venda</button>
+    <button id="btnDashboard" class="btn btn-sidebar hidden" onclick="mostrar('dashboard')">📊 Dashboard</button>
+    <button id="btnLogin" class="btn btn-sidebar" onclick="mostrar('login')">🔒 Login</button>
+    <button id="btnLogout" class="btn btn-sidebar hidden" onclick="logout()">🚪 Sair</button>
+</div>
+
+<div class="main">
+
+<div id="clienteInfo" class="card hidden" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <div>Olá <strong id="clienteNome"></strong> (<strong id="usuarioPerfil"></strong>)</div>
+    <div>
+        <button id="btnMeusPedidos" class="btn hidden" onclick="listarPedidosCliente()">Meus Pedidos</button>
+        <button class="btn" onclick="logout()">Sair</button>
+    </div>
+</div>
+
+<!-- LOGIN UNICO (cliente / administrador / operador) -->
+<div id="login" class="hidden">
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <div class="login-header">
+                <div class="login-logo">🍔</div>
+                <h2 class="login-brand">Lanche Feliz</h2>
+                <p class="login-subtitle">Bem-vindo de volta!</p>
+            </div>
+
+            <div class="login-tabs">
+                <button class="login-tab active" id="tabEntrar" onclick="trocarAbaLogin('entrar')">Entrar</button>
+                <button class="login-tab" id="tabCadastrar" onclick="trocarAbaLogin('cadastrar')">Criar conta</button>
+                <div class="login-tab-slider" id="loginTabSlider"></div>
+            </div>
+
+            <!-- Aba Login -->
+            <div class="login-section" id="abaEntrar">
+                <div class="input-field">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="user" placeholder="Login ou e-mail" class="login-input">
+                </div>
+                <div class="input-field">
+                    <span class="input-icon">🔑</span>
+                    <input type="password" id="pass" placeholder="Senha" class="login-input">
+                </div>
+                <button class="btn-login" onclick="fazerLogin()">
+                    <span>Entrar</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                </button>
+                <p id="erro" class="login-msg error"></p>
+            </div>
+
+            <!-- Aba Cadastro -->
+            <div class="login-section hidden" id="abaCadastrar">
+                <div class="input-field">
+                    <span class="input-icon">🙍</span>
+                    <input type="text" id="cadNome" placeholder="Nome completo" class="login-input">
+                </div>
+                <div class="input-field">
+                    <span class="input-icon">✉️</span>
+                    <input type="email" id="cadEmail" placeholder="E-mail" class="login-input">
+                </div>
+                <div class="input-field">
+                    <span class="input-icon">🔑</span>
+                    <input type="password" id="cadSenha" placeholder="Senha" class="login-input">
+                </div>
+                <div class="input-field">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="cadSenha2" placeholder="Confirmar senha" class="login-input">
+                </div>
+                <button class="btn-login" onclick="cadastrarCliente()">
+                    <span>Criar minha conta</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                </button>
+                <p id="cadastroMsg" class="login-msg error"></p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function trocarAbaLogin(aba) {
+    const entrar = document.getElementById('abaEntrar');
+    const cadastrar = document.getElementById('abaCadastrar');
+    const tabEntrar = document.getElementById('tabEntrar');
+    const tabCadastrar = document.getElementById('tabCadastrar');
+    const slider = document.getElementById('loginTabSlider');
+
+    if (aba === 'entrar') {
+        entrar.classList.remove('hidden');
+        entrar.classList.add('fade-in');
+        cadastrar.classList.add('hidden');
+        tabEntrar.classList.add('active');
+        tabCadastrar.classList.remove('active');
+        slider.style.transform = 'translateX(0%)';
+    } else {
+        cadastrar.classList.remove('hidden');
+        cadastrar.classList.add('fade-in');
+        entrar.classList.add('hidden');
+        tabCadastrar.classList.add('active');
+        tabEntrar.classList.remove('active');
+        slider.style.transform = 'translateX(100%)';
+    }
+}
+</script>
+
+<!-- CLIENTE: PEDIDOS -->
+<div id="cliente-pedidos" class="card hidden">
+    <h3>Meus Pedidos</h3>
+    <div id="listaPedidosCliente"></div>
+    <button class="btn" onclick="mostrar('vendas')">Voltar ao Cardápio</button>
+</div>
+
+<!-- MENU PRINCIPAL -->
+<div id="menu" class="hidden">
+</div>
+
+<!-- VENDAS -->
+<div id="vendas" class="hidden">
+    <div class="card">
+        <h3>Cardápio</h3>
+        <div id="novoProdutoBox" class="card hidden">
+    <h3>Novo Produto</h3>
+
+    <input type="text" id="novoNome" placeholder="Nome do produto">
+    <input type="number" id="novoPreco" placeholder="Preço" step="0.01">
+    <input type="text" id="novoImg" placeholder="URL da imagem">
+
+            <button class="btn btn-primary" onclick="salvarNovoProduto()">Salvar Produto</button>
+            <button class="btn" onclick="fecharNovoProduto()">Cancelar</button>
+</div>
+
+
+<div id="adminArea" class="hidden">
+    <button class="btn btn-primary" onclick="abrirNovoProduto()">
+        ➕ Novo Produto
+    </button>
+</div>
+
+        <div id="listaProdutos"></div>
+    </div>
+
+    <div class="card">
+        <h3>Carrinho</h3>
+        <div id="carrinho"></div>
+        <h4>Total: R$ <span id="total">0.00</span></h4>
+        <button class="btn btn-primary" onclick="irPagamento()">Ir para Pagamento</button>
+    </div>
+</div>
+
+<!-- PAGAMENTO -->
+<div id="pagamento" class="hidden">
+    <h3>Pagamento</h3>
+    <select id="forma">
+        <option value="">Selecione</option>
+        <option>Dinheiro</option>
+        <option>Cartão</option>
+        <option>PIX</option>
+    </select>
+
+    <div id="dinheiroCampo" class="hidden">
+        <input type="number" id="valorRecebido" placeholder="Valor recebido">
+    </div>
+
+    <button class="btn btn-primary" onclick="finalizar()">Finalizar</button>
+    <button class="btn" onclick="mostrar('vendas')">Voltar</button>
+
+    <div id="recibo"></div>
+</div>
+
+
+    <!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+    <h3>Relatório de Vendas</h3>
+    <div id="relatorio"></div>
+    <canvas id="graficoVendas"></canvas>
+    <canvas id="graficoVendasDia" style="margin-top:16px;"></canvas>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
