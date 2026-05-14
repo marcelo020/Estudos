@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matriz Avaliativa — Sandbox Regulatório do MEC</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=cabinet-grotesk@500,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Estilos específicos da Matriz Avaliativa */
+    .criteria-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: var(--color-primary-highlight);
+      color: var(--color-primary);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .criteria-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .criterion-card {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+    }
+
+    .criterion-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .criterion-title {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      flex: 1;
+      line-height: 1.45;
+    }
+
+    .criterion-num {
+      color: var(--color-text-faint);
+      font-weight: 400;
+      margin-right: 5px;
+    }
+
+    .weight-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-md);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .weight-5 { background: #FAEEDA; color: #633806; }
+    .weight-4 { background: #E6F1FB; color: #0C447C; }
+    .weight-3 { background: #E1F5EE; color: #085041; }
+    .weight-2 { background: #EEEDFE; color: #3C3489; }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-buttons {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .score-btn {
+      flex: 1;
+      height: 36px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+    }
+
+    .score-btn:hover {
+      border-color: var(--color-text-faint);
+      color: var(--color-text);
+    }
+
+    .score-btn.active-1 { background: #FCEBEB; border-color: #E24B4A; color: #A32D2D; }
+    .score-btn.active-2 { background: #FAEEDA; border-color: #BA7517; color: #633806; }
+    .score-btn.active-3 { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+    .score-btn.active-4 { background: #E6F1FB; border-color: #378ADD; color: #0C447C; }
+    .score-btn.active-5 { background: #EEEDFE; border-color: #7F77DD; color: #3C3489; }
+
+    .partial-score {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      min-width: 64px;
+      text-align: right;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--color-text-faint);
+      margin-top: 8px;
+      min-height: 18px;
+      line-height: 1.5;
+    }
+
+    .results-panel {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+
+    .results-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+
+    .metric-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .metric-card-label {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-card-value {
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .metric-card-sub {
+      font-size: 11px;
+      color: var(--color-text-faint);
+      margin-top: 2px;
+    }
+
+    .progress-wrap {
+      background: var(--color-surface-offset);
+      border-radius: 4px;
+      height: 5px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--color-primary);
+      transition: width 0.4s ease;
+    }
+
+    .matriz-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @media print {
+      .score-btn { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+
+    @media (max-width: 520px) {
+      .criterion-header { flex-direction: column; gap: 8px; }
+      .score-btn { font-size: 12px; height: 32px; }
+    }
+  </style>
+  <script src="candidate-rules.js"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+
+  <div class="app-shell">
+    <header class="topbar" aria-label="Cabeçalho principal">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Logo do sistema">
+            <rect x="3" y="4" width="22" height="20" rx="6" stroke="currentColor" stroke-width="2"></rect>
+            <path d="M8 10H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M8 15H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            <circle cx="19.5" cy="18.5" r="2.5" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <div>
+          <h1>Cadastro de Candidatos</h1>
+          <p>Painel para inscrição, conferência documental e decisão de aptidão.</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span id="userInfo" style="display: flex; align-items: center; gap: 1rem; font-size: var(--text-sm); color: var(--color-text-muted);"></span>
+        <button class="theme-toggle" type="button" id="themeToggleBtn" aria-label="Alternar para tema escuro">🌙 Tema</button>
+        <button class="action-btn" type="button" id="logoutBtn" style="background-color: var(--color-warning); color: var(--color-text-inverse);">Sair</button>
+      </div>
+    </header>
+
+    <main id="conteudo" aria-label="Conteúdo principal">
+      <div class="tab-buttons" role="tablist" aria-label="Navegação entre abas">
+        <a class="tab-btn" href="index.html" role="tab" aria-selected="false">Dashboard</a>
+        <a class="tab-btn" href="index.html" role="tab" aria-selected="false">Novo cadastro</a>
+        <a class="tab-btn" href="index.html" role="tab" aria-selected="false">Lista e triagem</a>
+        <a class="tab-btn active" href="matriz.html" role="tab" aria-selected="true" aria-current="page">Matriz avaliativa</a>
+      </div>
+
+      <section class="dashboard-grid">
+        <article class="panel" aria-labelledby="matriz-title">
+          <div class="panel-head">
+            <div>
+              <h2 id="matriz-title">Matriz avaliativa</h2>
+              <p>Atribua uma nota de 1 a 5 em cada critério. A pontuação final é calculada automaticamente com base nos pesos.</p>
+              <p id="candidate-info" style="margin-top:6px; font-size:var(--text-sm); color:var(--color-primary); font-weight:600;"></p>
+            </div>
+            <span class="criteria-badge">10 critérios</span>
+          </div>
+
+          <div class="panel-body">
+            <div class="criteria-list" id="criteria-list"></div>
+
+            <div class="results-panel">
+              <p class="results-title">Resultado</p>
+              <div class="results-grid">
+                <div class="metric-card">
+                  <div class="metric-card-label">Pontuação final</div>
+                  <div class="metric-card-value" id="final-score">—</div>
+                  <div class="metric-card-sub">de 160 pontos possíveis</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Aproveitamento</div>
+                  <div class="metric-card-value" id="pct-score">—</div>
+                  <div class="metric-card-sub">percentual atingido</div>
+                  <div class="progress-wrap">
+                    <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Critérios avaliados</div>
+                  <div class="metric-card-value" id="filled-count">0/10</div>
+                  <div class="metric-card-sub">preenchidos</div>
+                </div>
+              </div>
+              <div class="matriz-actions">
+                <a class="btn btn-soft" href="index.html#lista">Voltar</a>
+                <button class="btn btn-soft" type="button" onclick="resetAll()">Limpar notas</button>
+                <button class="btn btn-primary" type="button" id="saveAvaliacaoBtn" onclick="saveAvaliacao()" style="display:none;">Salvar avaliação</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Autenticação
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      window.location.href = 'login.html';
+    }
+
+    // Tema
+    let themeMode = localStorage.getItem('theme-preference') || 'light';
+    document.documentElement.setAttribute('data-theme', themeMode);
+
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const userInfoEl = document.getElementById('userInfo');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    function updateThemeButton() {
+      themeToggleBtn.textContent = themeMode === 'dark' ? '☀️ Tema' : '🌙 Tema';
+    }
+    updateThemeButton();
+
+    themeToggleBtn.addEventListener('click', () => {
+      themeMode = themeMode === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', themeMode);
+      localStorage.setItem('theme-preference', themeMode);
+      updateThemeButton();
+    });
+
+    if (userInfoEl && currentUser) {
+      const roleLabel = currentUser.role === 'candidato' ? 'Candidato' : 'Responsável';
+      const safeName = document.createTextNode(currentUser.name);
+      const nameSpan = document.createElement('span');
+      nameSpan.appendChild(safeName);
+      const roleSpan = document.createElement('span');
+      roleSpan.style.opacity = '0.6';
+      roleSpan.style.fontSize = 'var(--text-xs)';
+      roleSpan.textContent = roleLabel;
+      userInfoEl.appendChild(document.createTextNode('👤 '));
+      userInfoEl.appendChild(nameSpan);
+      userInfoEl.appendChild(roleSpan);
+    }
+
+    logoutBtn.addEventListener('click', () => {
+      logoutUser();
+      window.location.href = 'login.html';
+    });
+
+    // Candidato associado (via URL param)
+    const urlParams = new URLSearchParams(window.location.search);
+    const candidateId = urlParams.get('id') || '';
+    const linkedCandidate = candidateId
+      ? (getAllStoredCandidates().find(c => c.id === candidateId) || null)
+      : null;
+
+    if (linkedCandidate) {
+      const infoEl = document.getElementById('candidate-info');
+      if (infoEl) infoEl.textContent = `Avaliando: ${linkedCandidate.nome} — ${linkedCandidate.area}`;
+      const saveBtn = document.getElementById('saveAvaliacaoBtn');
+      if (saveBtn) saveBtn.style.display = '';
+    }
+
+    // Matriz avaliativa
+    const criteria = [
+      {
+        id: 1,
+        title: "Impacto social e potencial de redução de desigualdades educacionais",
+        weight: 3,
+        weightClass: "weight-3",
+        metrics: {
+          1: "Não demonstra impacto ou apresenta impacto genérico.",
+          2: "Potencial de impacto pouco claro ou insuficientemente desenvolvido.",
+          3: "Impacto provável, com indicadores iniciais e coerência metodológica.",
+          4: "Impacto relevante com fundamentação sólida e evidências preliminares.",
+          5: "Forte impacto social, com métricas claras e alta capacidade de reduzir desigualdades."
+        }
+      },
+      {
+        id: 2,
+        title: "Atenção a populações em situação de vulnerabilidade",
+        weight: 3,
+        weightClass: "weight-3",
+        metrics: {
+          1: "Não contempla populações vulneráveis.",
+          2: "Consideração superficial.",
+          3: "Ações específicas limitadas.",
+          4: "Ações estruturadas para grupos vulneráveis.",
+          5: "Foco integral com salvaguardas de equidade."
+        }
+      },
+      {
+        id: 3,
+        title: "Contribuição para acesso, permanência, inclusão digital e EJA",
+        weight: 3,
+        weightClass: "weight-3",
+        metrics: {
+          1: "Não há contribuição identificável.",
+          2: "Contribuição potencial pouco demonstrada.",
+          3: "Contribuição moderada.",
+          4: "Contribuição robusta ao acesso e permanência.",
+          5: "Contribuição sistêmica para inclusão e EJA."
+        }
+      },
+      {
+        id: 4,
+        title: "Potencial pedagógico ou de melhoria da gestão educacional",
+        weight: 4,
+        weightClass: "weight-4",
+        metrics: {
+          1: "Sem fundamentação pedagógica.",
+          2: "Fundamentação insuficiente.",
+          3: "Coerência moderada.",
+          4: "Contribuição consistente.",
+          5: "Alto potencial com evidências e teoria de mudança."
+        }
+      },
+      {
+        id: 5,
+        title: "Aderência ao interesse público educacional",
+        weight: 3,
+        weightClass: "weight-3",
+        metrics: {
+          1: "Não alinhado ao interesse público.",
+          2: "Aderência fraca.",
+          3: "Aderência geral.",
+          4: "Aderência clara a políticas nacionais.",
+          5: "Aderência plena e estratégica."
+        }
+      },
+      {
+        id: 6,
+        title: "Aderência a princípios de desenvolvimento aberto, interoperável e auditável",
+        weight: 2,
+        weightClass: "weight-2",
+        metrics: {
+          1: "Código fechado.",
+          2: "Abertura mínima.",
+          3: "Abertura parcial.",
+          4: "Código majoritariamente aberto.",
+          5: "Open source integral e interoperável."
+        }
+      },
+      {
+        id: 7,
+        title: "Inovação, relevância, robustez metodológica e viabilidade técnica",
+        weight: 4,
+        weightClass: "weight-4",
+        metrics: {
+          1: "Baixa inovação ou inviável.",
+          2: "Inovação limitada e TRL inadequado.",
+          3: "Inovação adequada.",
+          4: "Documentação sólida.",
+          5: "Alto nível de inovação e robustez."
+        }
+      },
+      {
+        id: 8,
+        title: "Mitigação de riscos, governança ética e segurança dos dados",
+        weight: 5,
+        weightClass: "weight-5",
+        metrics: {
+          1: "Sem mitigação de riscos.",
+          2: "Mitigação insuficiente.",
+          3: "Mitigação parcial.",
+          4: "Governança robusta.",
+          5: "AIA completa e segurança avançada."
+        }
+      },
+      {
+        id: 9,
+        title: "Escalabilidade e possibilidade de replicação em redes de ensino",
+        weight: 2,
+        weightClass: "weight-2",
+        metrics: {
+          1: "Não escalável.",
+          2: "Escalabilidade limitada.",
+          3: "Replicável com ajustes.",
+          4: "Boa escalabilidade.",
+          5: "Alto potencial nacional."
+        }
+      },
+      {
+        id: 10,
+        title: "Nível de explicabilidade, auditabilidade e supervisão humana",
+        weight: 3,
+        weightClass: "weight-3",
+        metrics: {
+          1: "Sistema opaco.",
+          2: "Explicabilidade limitada.",
+          3: "Explicabilidade razoável.",
+          4: "Boa explicabilidade e logs.",
+          5: "Explicabilidade total e supervisão humana plena."
+        }
+      }
+    ];
+
+    const MAX_SCORE = criteria.reduce((sum, c) => sum + c.weight * 5, 0); // 160
+    const scores = {};
+
+    function renderCriteria() {
+      const list = document.getElementById('criteria-list');
+      list.innerHTML = '';
+      criteria.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'criterion-card';
+        card.innerHTML = `
+          <div class="criterion-header">
+            <div class="criterion-title">
+              <span class="criterion-num">${c.id}.</span>${c.title}
+            </div>
+            <span class="weight-badge ${c.weightClass}">Peso ${c.weight}</span>
+          </div>
+          <div class="score-row">
+            <div class="score-buttons">
+              ${[1,2,3,4,5].map(n =>
+                `<button class="score-btn" id="btn-${c.id}-${n}" onclick="setScore(${c.id}, ${n})" title="Nota ${n}: ${c.metrics[n]}">${n}</button>`
+              ).join('')}
+            </div>
+            <span class="partial-score" id="partial-${c.id}"></span>
+          </div>
+          <div class="metric-label" id="metric-${c.id}">Selecione uma nota para ver o descritor.</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function setScore(criterionId, score) {
+      scores[criterionId] = score;
+      const c = criteria.find(x => x.id === criterionId);
+      [1,2,3,4,5].forEach(n => {
+        const btn = document.getElementById(`btn-${criterionId}-${n}`);
+        btn.className = 'score-btn' + (n === score ? ` active-${n}` : '');
+      });
+      document.getElementById(`partial-${criterionId}`).textContent = `${score} × ${c.weight} = ${score * c.weight}`;
+      document.getElementById(`metric-${criterionId}`).textContent = c.metrics[score];
+      updateResults();
+    }
+
+    function updateResults() {
+      const filled = Object.keys(scores).length;
+      document.getElementById('filled-count').textContent = `${filled}/10`;
+
+      if (filled === 0) {
+        document.getElementById('final-score').textContent = '—';
+        document.getElementById('pct-score').textContent = '—';
+        document.getElementById('progress-bar').style.width = '0%';
+        return;
+      }
+
+      const total = Object.entries(scores).reduce((sum, [id, s]) => {
+        const c = criteria.find(x => x.id === parseInt(id));
+        return sum + s * c.weight;
+      }, 0);
+
+      const pct = Math.round((total / MAX_SCORE) * 100);
+      document.getElementById('final-score').textContent = total;
+      document.getElementById('pct-score').textContent = pct + '%';
+      document.getElementById('progress-bar').style.width = pct + '%';
+    }
+
+    function resetAll() {
+      if (!confirm('Deseja limpar todas as notas atribuídas?')) return;
+      Object.keys(scores).forEach(k => delete scores[k]);
+      renderCriteria();
+      updateResults();
+    }
+
+
+    renderCriteria();
+
+    // Pre-preencher notas do candidato vinculado
+    if (linkedCandidate?.matrizScores) {
+      Object.entries(linkedCandidate.matrizScores).forEach(([id, score]) => {
+        setScore(parseInt(id), score);
+      });
+    }
+
+    updateResults();
+
+    function saveAvaliacao() {
+      if (!candidateId) return;
+      const allCandidates = getAllStoredCandidates();
+      const idx = allCandidates.findIndex(c => c.id === candidateId);
+      if (idx === -1) return;
+      allCandidates[idx] = { ...allCandidates[idx], matrizScores: { ...scores } };
+      saveAllStoredCandidates(allCandidates);
+      const btn = document.getElementById('saveAvaliacaoBtn');
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓ Salvo!';
+        btn.disabled = true;
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+      }
+    }
+  </script>
+</body>
+</html>
