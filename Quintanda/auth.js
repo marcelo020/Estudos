@@ -39,5 +39,3 @@ async function logout() {
   console.log('Logout realizado!')
 }
 
-// Teste
-login('cowainer020@gmail.com', 'senha123')
