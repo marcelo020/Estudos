@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Dossiês do Sandbox</title>
+
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        sandbox: {
+                            bg: 'var(--bg)', panel: 'var(--panel)', ink: 'var(--ink)', mute: 'var(--mute)',
+                            line: 'var(--line)', acc: 'var(--acc)', accbg: 'var(--accbg)', warn: 'var(--warn)',
+                            n1: 'var(--n1)', n2: 'var(--n2)', n3: 'var(--n3)', n4: 'var(--n4)', n5: 'var(--n5)',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Public Sans"', 'system-ui', 'sans-serif'],
+                        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg: #F1F5F5; --panel: #fff; --ink: #14262B; --mute: #5A6C71; --line: #D3DDDE;
+            --acc: #1E6B73; --accbg: #DFEEEF; --warn: #F6E9E5; --n1: #B4442F;
+            --n2: #C9782B; --n3: #8F8A2A; --n4: #3F8A6B; --n5: #1E6B73;
+        }
+        .dark {
+            --bg: #0F1A1D; --panel: #16252A; --ink: #E6EEEF; --mute: #92A6AB; --line: #2A3B40;
+            --acc: #5CB8C1; --accbg: #1B3439; --warn: #33231F; --n1: #E27760;
+            --n2: #E0A052; --n3: #C4BE55; --n4: #69BC97; --n5: #5CB8C1;
+        }
+        body { background-color: var(--bg); color: var(--ink); font-family: 'Public Sans', sans-serif; transition: background-color 0.3s; }
+        @media print { .no-print { display: none !important; } body { background: #fff; color: #000; } }
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="no-print flex flex-wrap items-center justify-between gap-4 p-4 bg-sandbox-panel border-b border-sandbox-line">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-display font-bold">Dossiês do Sandbox</h1>
+                <span id="syncStatus" class="text-xs text-sandbox-mute px-2 py-1 bg-sandbox-bg rounded-full">Carregando...</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btnMode" class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all bg-white border-sandbox-line text-sandbox-ink hover:border-sandbox-acc">
+                    <i data-lucide="eye" class="w-4 h-4"></i> <span id="modeText">Modo Apresentação</span>
+                </button>
+                <button onclick="window.print()" class="flex items-center gap-2 px-3 py-2 rounded-lg border border-sandbox-line bg-white text-sandbox-ink text-sm hover:border-sandbox-acc transition-all">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir/PDF
+                </button>
+                <button id="btnDark" class="p-2 rounded-lg border border-sandbox-line bg-white text-sandbox-ink hover:bg-sandbox-bg transition-all">
+                    <i data-lucide="moon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="no-print w-64 flex flex-col gap-4 p-4 bg-sandbox-panel border-r border-sandbox-line shrink-0 overflow-y-auto">
+                <div class="relative">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-sandbox-mute">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Buscar participante..." class="w-full pl-9 pr-3 py-2 text-sm bg-sandbox-bg border border-sandbox-line rounded-lg focus:outline-none focus:ring-2 focus:ring-sandbox-acc">
+                </div>
+                <div id="participantList" class="flex flex-col gap-2"></div>
+                <button id="btnAddParticipant" class="mt-auto flex items-center justify-center gap-2 p-3 rounded-xl bg-sandbox-acc text-white text-sm font-bold hover:opacity-90 transition-all">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Novo Participante
+                </button>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="mainContent" class="flex-1 overflow-y-auto p-6 fade-in"></main>
+        </div>
+
+        <!-- Export Footer -->
+        <div class="fixed bottom-4 right-4 no-print flex gap-2">
+            <button id="btnExportJSON" class="flex items-center gap-1 text-xs text-sandbox-mute hover:text-sandbox-acc transition-all px-2 py-1">
+                <i data-lucide="download" class="w-3 h-3"></i> JSON
+            </button>
+            <button id="btnExportCSV" class="flex items-center gap-1 text-xs text-sandbox-mute hover:text-sandbox-acc transition-all px-2 py-1">
+                <i data-lucide="download" class="w-3 h-3"></i> CSV
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let state = {
+            participants: [],
+            selectedId: null,
+            selectedMonth: null,
+            isPresentationMode: false,
+            searchQuery: ''
+        };
+
+        // --- Data Service ---
+        const DataService = {
+            db: null,
+            timer: null,
+            async init() {
+                try {
+                    if (window.claude && typeof window.claude.use === 'function') {
+                        this.db = await window.claude.use('db');
+                    }
+                } catch (e) {
+                    console.warn('DB indisponível, usando armazenamento local', e);
+                    this.db = null;
+                }
+            },
+            async load() {
+                if (this.db) {
+                    try {
+                        const snap = await this.db.collection('participantes').get();
+                        return snap.docs.map(d => d.data()).filter(Boolean);
+                    } catch (e) {
+                        console.warn('Falha ao ler do banco, usando local', e);
+                        return JSON.parse(localStorage.getItem('dossies') || '[]');
+                    }
+                }
+                return JSON.parse(localStorage.getItem('dossies') || '[]');
+            },
+            async save(list, participant) {
+                if (this.db) {
+                    await this.db.doc('participantes/' + participant.id).set(participant);
+                } else {
+                    localStorage.setItem('dossies', JSON.stringify(list));
+                }
+            },
+            async delete(id, list) {
+                if (this.db) {
+                    await this.db.doc('participantes/' + id).delete();
+                } else {
+                    localStorage.setItem('dossies', JSON.stringify(list));
+                }
+            },
+            queueSave(list, participant) {
+                document.getElementById('syncStatus').innerText = 'Salvando...';
+                clearTimeout(this.timer);
+                this.timer = setTimeout(async () => {
+                    try {
+                        await this.save(list, participant);
+                        document.getElementById('syncStatus').innerText = this.db ? 'Dados compartilhados' : 'Salvo localmente';
+                    } catch (e) {
+                        document.getElementById('syncStatus').innerText = 'Erro ao salvar';
+                    }
+                }, 600);
+            }
+        };
+
+        // --- Logic ---
+        async function initApp() {
+            await DataService.init();
+            state.participants = await DataService.load();
+            state.participants.sort((a, b) => (a.ident.nome || '').localeCompare(b.ident.nome || ''));
+
+            document.getElementById('syncStatus').innerText = DataService.db ? 'Dados compartilhados' : 'Salvo localmente';
+
+            setupEventListeners();
+            renderAll();
+            lucide.createIcons();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('btnMode').onclick = () => {
+                state.isPresentationMode = !state.isPresentationMode;
+                const btn = document.getElementById('btnMode');
+                const text = document.getElementById('modeText');
+                if (state.isPresentationMode) {
+                    btn.className = "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all bg-sandbox-acc text-white border-sandbox-acc";
+                    text.innerText = "Modo Edição";
+                } else {
+                    btn.className = "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all bg-white border-sandbox-line text-sandbox-ink hover:border-sandbox-acc";
+                    text.innerText = "Modo Apresentação";
+                }
+                renderAll();
+            };
+
+            document.getElementById('btnDark').onclick = () => {
+                document.documentElement.classList.toggle('dark');
+            };
+
+            document.getElementById('searchInput').oninput = (e) => {
+                state.searchQuery = e.target.value;
+                renderSidebar();
+            };
+
+            document.getElementById('btnAddParticipant').onclick = () => {
+                const np = {
+                    id: 'p' + Date.now().toString(36),
+                    ident: { nome: 'Novo participante', contato: '', entrada: '', solucao: '', objetivo: '', partida: '' },
+                    ciclos: []
+                };
+                state.participants.push(np);
+                state.selectedId = np.id;
+                DataService.save(state.participants, np);
+                renderAll();
+            };
+
+            document.getElementById('btnExportJSON').onclick = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.participants, null, 2));
+                const a = document.createElement('a'); a.href = dataStr; a.download = "dossies_backup.json"; a.click();
+            };
+
+            document.getElementById('btnExportCSV').onclick = () => {
+                let csv = 'Participante,Mês,Nota,Atendeu\n';
+                state.participants.forEach(p => {
+                    p.ciclos.forEach(c => { csv += `"${p.ident.nome}","${c.mes}",${c.nota},"${c.atendeu}"\n`; });
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "dossies_export.csv"; a.click();
+            };
+        }
+
+        function renderAll() {
+            renderSidebar();
+            renderMain();
+            lucide.createIcons();
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('participantList');
+            const filtered = state.participants.filter(p =>
+                (p.ident.nome || '').toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                (p.ident.solucao || '').toLowerCase().includes(state.searchQuery.toLowerCase())
+            );
+
+            list.innerHTML = filtered.map(p => {
+                const lastNota = p.ciclos.length ? p.ciclos[p.ciclos.length - 1].nota : 0;
+                const colors = { 1: 'bg-sandbox-n1', 2: 'bg-sandbox-n2', 3: 'bg-sandbox-n3', 4: 'bg-sandbox-n4', 5: 'bg-sandbox-n5' };
+                const colorClass = colors[lastNota] || 'bg-sandbox-mute';
+                const activeClass = state.selectedId === p.id ? 'bg-sandbox-accbg border-sandbox-acc ring-1 ring-sandbox-acc' : 'bg-transparent border-transparent hover:bg-sandbox-bg';
+
+                return `
+                    <button onclick="selectParticipant('${p.id}')" class="flex items-center justify-between p-3 rounded-xl text-left transition-all border ${activeClass}">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <i data-lucide="user" class="w-4 h-4 text-sandbox-mute shrink-0"></i>
+                            <span class="truncate text-sm font-medium">${p.ident.nome}</span>
+                        </div>
+                        <span class="text-xs font-bold text-white px-2 py-0.5 rounded-md ${colorClass}">${lastNota || '–'}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectParticipant(id) {
+            if (state.selectedId === id) return;
+            state.selectedId = id;
+            state.selectedMonth = null;
+            renderAll();
+        }
+
+        function selectMonth(month) {
+            state.selectedMonth = month;
+            renderAll();
+        }
+
+        function renderMain() {
+            const main = document.getElementById('mainContent');
+            if (!state.selectedId) {
+                main.innerHTML = renderDashboard();
+            } else {
+                const p = state.participants.find(x => x.id === state.selectedId);
+                main.innerHTML = renderParticipant(p);
+            }
+        }
+
+        function renderDashboard() {
+            if (state.participants.length === 0) {
+                return `<div class="flex flex-col items-center justify-center h-full text-sandbox-mute p-8 text-center">
+                    <i data-lucide="layout-dashboard" class="w-12 h-12 mb-4 opacity-20"></i>
+                    <p class="text-lg">Adicione participantes para ver as estatísticas.</p>
+                </div>`;
+            }
+
+            const total = state.participants.length;
+            const active = state.participants.filter(p => p.ciclos.length > 0).length;
+            let sumTotal = 0, countTotal = 0;
+            state.participants.forEach(p => p.ciclos.forEach(c => { if (c.nota) { sumTotal += c.nota; countTotal++; } }));
+            const avgScore = countTotal ? (sumTotal / countTotal).toFixed(1) : '–';
+
+            return `
+                <div class="max-w-6xl mx-auto space-y-8 fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-display font-bold">Dashboard do Sandbox</h2>
+                        <div class="flex items-center gap-2 text-xs text-sandbox-mute">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div> Atualizado em tempo real
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-sandbox-panel p-6 rounded-2xl border border-sandbox-line shadow-sm flex items-center gap-4">
+                            <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i data-lucide="users" class="w-6 h-6"></i></div>
+                            <div><p class="text-xs text-sandbox-mute font-medium">Total Participantes</p><p class="text-2xl font-bold">${total}</p></div>
+                        </div>
+                        <div class="bg-sandbox-panel p-6 rounded-2xl border border-sandbox-line shadow-sm flex items-center gap-4">
+                            <div class="p-3 bg-green-100 text-green-600 rounded-xl"><i data-lucide="trending-up" class="w-6 h-6"></i></div>
+                            <div><p class="text-xs text-sandbox-mute font-medium">Engajamento</p><p class="text-2xl font-bold">${Math.round((active / total) * 100)}%</p></div>
+                        </div>
+                        <div class="bg-sandbox-panel p-6 rounded-2xl border border-sandbox-line shadow-sm flex items-center gap-4">
+                            <div class="p-3 bg-yellow-100 text-yellow-600 rounded-xl"><i data-lucide="award" class="w-6 h-6"></i></div>
+                            <div><p class="text-xs text-sandbox-mute font-medium">Média de Notas</p><p class="text-2xl font-bold">${avgScore}</p></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-sandbox-panel p-6 rounded-2xl border border-sandbox-line shadow-sm">
+                            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Recentes</h3>
+                            <div class="flex flex-col gap-2">
+                                ${state.participants.slice(-5).reverse().map(p => `
+                                    <button onclick="selectParticipant('${p.id}')" class="flex items-center justify-between p-3 rounded-xl hover:bg-sandbox-bg transition-all group">
+                                        <span class="text-sm font-medium">${p.ident.nome}</span>
+                                        <i data-lucide="arrow-right" class="w-3 h-3 text-sandbox-mute group-hover:text-sandbox-acc transition-all"></i>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="bg-sandbox-panel p-6 rounded-2xl border border-sandbox-line shadow-sm">
+                            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="award" class="w-4 h-4"></i> Distribuição</h3>
+                            <div class="space-y-3">
+                                ${[5, 4, 3, 2, 1].map(n => {
+                                    const count = state.participants.filter(p => p.ciclos.length && p.ciclos[p.ciclos.length - 1].nota === n).length;
+                                    const pct = total ? (count / total) * 100 : 0;
+                                    const colors = { 1: 'bg-sandbox-n1', 2: 'bg-sandbox-n2', 3: 'bg-sandbox-n3', 4: 'bg-sandbox-n4', 5: 'bg-sandbox-n5' };
+                                    return `
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs font-bold w-4">${n}</span>
+                                            <div class="flex-1 h-3 bg-sandbox-bg rounded-full overflow-hidden">
+                                                <div class="h-full transition-all ${colors[n]}" style="width: ${pct}%"></div>
+                                            </div>
+                                            <span class="text-xs text-sandbox-mute w-8 text-right">${count}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderParticipant(p) {
+            const cs = [...p.ciclos].sort((a, b) => a.mes.localeCompare(b.mes));
+            const currentCycle = cs.find(c => c.mes === state.selectedMonth) || (cs.length ? cs[cs.length - 1] : null);
+
+            const field = (label, value, key, scope = 'k', type = 'text', ta = false, w = false, hint = '', rows = 3) => {
+                if (state.isPresentationMode) {
+                    if (key === 'interno') return '';
+                    return `<div class="${w ? 'col-span-full' : ''} flex flex-col gap-1">
+                        <span class="text-sm font-semibold">${label}</span>
+                        <p class="text-sm leading-relaxed">${value || '<i class="text-sandbox-mute">Sem registro</i>'}</p>
+                    </div>`;
+                }
+                const inputClass = "p-2 text-sm bg-sandbox-bg border border-sandbox-line rounded-lg focus:ring-2 focus:ring-sandbox-acc outline-none transition-all";
+                const updateFn = `updateField('${p.id}', '${key}', this.value, '${scope}')`;
+
+                return `<div class="${w ? 'col-span-full' : ''} flex flex-col gap-1">
+                    <label class="text-sm font-semibold flex items-center gap-1">${label} ${hint ? `<i data-lucide="help-circle" class="w-3 h-3 text-sandbox-mute cursor-help" title="${hint}"></i>` : ''}</label>
+                    ${ta ? `<textarea rows="${rows}" class="${inputClass}" oninput="${updateFn}">${value || ''}</textarea>` :
+                         `<input type="${type}" class="${inputClass}" value="${(value || '').replace(/"/g, '&quot;')}" oninput="${updateFn}">`}
+                </div>`;
+            };
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-6 fade-in">
+                    <section class="bg-sandbox-panel border border-sandbox-line rounded-2xl p-6 shadow-sm">
+                        ${state.isPresentationMode ?
+                            `<h2 class="text-3xl font-display font-bold mb-4">${p.ident.nome}</h2>` :
+                            `<input class="text-3xl font-display font-bold mb-4 bg-transparent border-b border-transparent hover:border-sandbox-line focus:border-sandbox-acc outline-none w-full transition-all"
+                                value="${(p.ident.nome || '').replace(/"/g, '&quot;')}" oninput="updateField('${p.id}', 'nome', this.value, 'k')">`
+                        }
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${field("Responsável de contato", p.ident.contato, "contato")}
+                            ${field("Data de entrada", p.ident.entrada, "entrada", 'k', 'date')}
+                            ${field("Solução ou projeto testado", p.ident.solucao, "solucao", 'k', 'text', false, true)}
+                            ${field("Objetivo no sandbox", p.ident.objetivo, "objetivo", 'k', 'text', true, true, "O que o participante quer validar ou aprender.")}
+                            ${field("Ponto de partida", p.ident.partida, "partida", 'k', 'text', true, true, "Situação e maturidade na entrada.")}
+                        </div>
+                    </section>
+
+                    <section class="bg-sandbox-panel border border-sandbox-line rounded-2xl p-6 shadow-sm">
+                        <h2 class="text-xl font-display font-bold mb-4">Ciclo Mensal</h2>
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            ${cs.map(c => `
+                                <button onclick="selectMonth('${c.mes}')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${state.selectedMonth === c.mes ? 'bg-sandbox-acc text-white' : 'bg-sandbox-bg text-sandbox-mute hover:bg-sandbox-line'}">
+                                    ${c.mes.split('-')[0].slice(2)}/${c.mes.split('-')[1]}
+                                </button>
+                            `).join('')}
+                            ${!state.isPresentationMode ? `<button onclick="addCycle('${p.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sandbox-accbg text-sandbox-acc hover:bg-sandbox-acc hover:text-white transition-all flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Novo Mês</button>` : ''}
+                        </div>
+
+                        ${currentCycle ? `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${field("Encontros realizados", currentCycle.encontros, "encontros", 'c', 'text', false, false, "Quantidade e datas.")}
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold">Presença e Engajamento</span>
+                                    <div class="flex gap-2">
+                                        ${['Alto', 'Médio', 'Baixo'].map(opt => `
+                                            <button onclick="updateField('${p.id}', 'eng', '${opt}', 'c')" ${state.isPresentationMode ? 'disabled' : ''}
+                                                class="px-3 py-1 rounded-lg text-xs transition-all ${currentCycle.eng === opt ? 'bg-sandbox-acc text-white' : 'bg-sandbox-bg text-sandbox-mute border border-sandbox-line'}">${opt}</button>
+                                        `).join('')}
+                                    </div>
+                                    ${state.isPresentationMode ? `<p class="text-sm mt-1">${currentCycle.eng || '<i class="text-sandbox-mute">Não definido</i>'}</p>` : ''}
+                                </div>
+                                ${field("Dores enfrentadas", currentCycle.dores, "dores", 'c', 'text', true, true, "Dificuldades técnicas, regulatórias, de negócio, de equipe ou de recursos.", 3)}
+                                ${field("Desafio proposto", currentCycle.desafio, "desafio", 'c', 'text', true, true)}
+                                ${field("Resposta ao desafio", currentCycle.resposta, "resposta", 'c', 'text', true, true, "O que fez, entregou ou testou, com as evidências.", 3)}
+
+                                <div class="col-span-full bg-sandbox-bg p-4 rounded-xl border border-sandbox-line">
+                                    <span class="text-sm font-semibold block mb-3">Nota do mês (1 a 5)</span>
+                                    <div class="flex gap-2">
+                                        ${[1, 2, 3, 4, 5].map(n => `
+                                            <button onclick="updateField('${p.id}', 'nota', ${n}, 'c')" ${state.isPresentationMode ? 'disabled' : ''}
+                                                class="w-12 h-12 rounded-xl font-bold transition-all ${currentCycle.nota === n ? 'bg-sandbox-acc text-white ring-2 ring-offset-2 ring-sandbox-acc' : 'bg-white border border-sandbox-line text-sandbox-mute hover:border-sandbox-acc'}">${n}</button>
+                                        `).join('')}
+                                    </div>
+                                    ${state.isPresentationMode ? `<p class="text-sm mt-2 font-medium">Nota: <span class="text-sandbox-acc">${currentCycle.nota || '–'}</span> ${currentCycle.nota > 0 ? ' - ' + ['', 'Insuficiente', 'Abaixo do esperado', 'Satisfatório', 'Bom', 'Excelente'][currentCycle.nota] : ''}</p>` : ''}
+                                </div>
+
+                                <div class="col-span-full flex flex-col gap-1">
+                                    <span class="text-sm font-semibold">Atendeu à expectativa?</span>
+                                    <div class="flex gap-2">
+                                        ${['Sim', 'Parcialmente', 'Não'].map(opt => `
+                                            <button onclick="updateField('${p.id}', 'atendeu', '${opt}', 'c')" ${state.isPresentationMode ? 'disabled' : ''}
+                                                class="px-3 py-1 rounded-lg text-xs transition-all ${currentCycle.atendeu === opt ? 'bg-sandbox-acc text-white' : 'bg-sandbox-bg text-sandbox-mute border border-sandbox-line'}">${opt}</button>
+                                        `).join('')}
+                                    </div>
+                                    ${state.isPresentationMode ? `<p class="text-sm mt-1">${currentCycle.atendeu || '<i class="text-sandbox-mute">Não definido</i>'}</p>` : ''}
+                                </div>
+                                ${field("Justificativa", currentCycle.justificativa, "justificativa", 'c', 'text', true, true, "Por que essa nota?", 3)}
+                                ${field("Principais aprendizados do mês", currentCycle.aprend, "aprend", 'c', 'text', true, true)}
+                                ${field("Próximo desafio proposto", currentCycle.proximo, "proximo", 'c', 'text', true, true)}
+                                ${field("Nota interna", currentCycle.interno, "interno", 'c', 'text', true, true, '', 2)}
+                            </div>
+                        ` : `<p class="text-sandbox-mute text-center py-8">Crie o primeiro mês para registrar o progresso.</p>`}
+                    </section>
+                    ${!state.isPresentationMode ? `<button onclick="deleteParticipant('${p.id}')" class="flex items-center gap-2 text-sandbox-n1 text-sm font-medium hover:underline transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i> Excluir este participante</button>` : ''}
+                </div>
+            `;
+        }
+
+        // --- Event Handlers ---
+        window.selectParticipant = selectParticipant;
+        window.selectMonth = selectMonth;
+
+        window.updateField = (pId, key, val, scope) => {
+            const p = state.participants.find(x => x.id === pId);
+            if (!p) return;
+
+            if (scope === 'k') {
+                if (key === 'nome') {
+                    p.ident.nome = val;
+                } else {
+                    p.ident[key] = val;
+                }
+            } else {
+                const cycle = p.ciclos.find(c => c.mes === state.selectedMonth);
+                if (cycle) cycle[key] = val;
+            }
+
+            DataService.queueSave(state.participants, p);
+
+            // Se for um campo de seleção (estilo botão), redesenhamos a área para atualizar a cor do botão selecionado
+            if (scope === 'c' && (key === 'eng' || key === 'nota' || key === 'atendeu')) {
+                renderMain();
+                lucide.createIcons();
+            }
+        };
+
+        window.addCycle = (pId) => {
+            const p = state.participants.find(x => x.id === pId);
+            if (!p) return;
+            let nextM = new Date().toISOString().slice(0, 7);
+            if (p.ciclos.length) {
+                let [y, n] = p.ciclos[p.ciclos.length - 1].mes.split('-').map(Number);
+                n++; if (n > 12) { n = 1; y++; }
+                nextM = y + '-' + String(n).padStart(2, '0');
+            }
+            const newCycle = { mes: nextM, encontros: '', eng: '', dores: '', desafio: '', resposta: '', nota: 0, atendeu: '', justificativa: '', aprend: '', proximo: '', interno: '' };
+            p.ciclos.push(newCycle);
+            state.selectedMonth = nextM;
+            DataService.save(state.participants, p);
+            renderAll();
+        };
+
+        window.deleteParticipant = (id) => {
+            if (confirm('Excluir participante permanentemente?')) {
+                state.participants = state.participants.filter(x => x.id !== id);
+                if (state.selectedId === id) state.selectedId = null;
+                DataService.delete(id, state.participants);
+                renderAll();
+            }
+        };
+
+        // Start
+        initApp();
+    </script>
+</body>
+</html>
