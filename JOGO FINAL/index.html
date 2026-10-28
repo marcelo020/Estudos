@@ -1,0 +1,2260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vanguard: Dead Night - Fixed Edition</title>
+    <style>
+        /* Base da página e da área de jogo em tela cheia. */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050505; 
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        /* HUD, indicadores e avisos visuais exibidos sobre o canvas. */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #damage-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(circle at center, transparent 35%, rgba(150, 0, 0, 0.18) 64%, rgba(255, 0, 0, 0.72) 100%);
+            transition: opacity 0.08s ease-out;
+        }
+
+        #damage-overlay::after {
+            content: 'DANO RECEBIDO';
+            position: absolute;
+            top: 46%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 100, 100, 0.9);
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .panel {
+            position: absolute;
+            background: rgba(10, 0, 0, 0.7);
+            border: 2px solid #8a0303;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            color: #ff4444;
+            text-transform: uppercase;
+        }
+
+        #stats-panel {
+            top: 20px;
+            left: 20px;
+            width: 250px;
+        }
+
+        #wave-panel {
+            top: 20px;
+            right: 20px;
+            text-align: right;
+        }
+
+        #objective-panel {
+            top: 166px;
+            left: 20px;
+            max-width: 250px;
+            color: #7ee7ff;
+            padding: 9px 14px;
+            font-size: 12px;
+            z-index: 5;
+        }
+
+        #objective-panel.objective-announcement {
+            top: 50%;
+            left: 50%;
+            width: min(440px, calc(100vw - 60px));
+            max-width: none;
+            padding: 24px 30px;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 22px;
+            background: rgba(5, 18, 28, 0.94);
+            border-color: #35dfff;
+            box-shadow: 0 0 30px rgba(0, 190, 255, 0.5);
+        }
+
+        #objective-panel.objective-announcement #objective-health {
+            margin-top: 10px;
+            color: #d7f7ff;
+            font-size: 14px;
+        }
+
+        #minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 132px;
+            height: 132px;
+            border: 2px solid #8a0303;
+            border-radius: 50%;
+            background: rgba(7, 7, 12, 0.86);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 12px;
+            background: #222;
+            border: 1px solid #555;
+            margin-bottom: 15px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #aa0000, #ff3333);
+            transition: width 0.2s;
+        }
+
+        #ammo-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #0044aa, #00aaff);
+            transition: width 0.1s;
+        }
+
+        .text-blue { color: #00aaff; }
+        
+        /* Telas de início, pausa, fim de jogo, vitória e aprimoramentos. */
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ff0000;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 10px;
+            pointer-events: auto;
+        }
+
+        #game-over h1 {
+            color: #ff3333;
+            margin-top: 0;
+            font-size: 40px;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(560px, calc(100vw - 40px));
+            padding: 34px;
+            background: rgba(5, 7, 15, 0.94);
+            border: 2px solid #35dfff;
+            color: white;
+            text-align: center;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(0, 190, 255, 0.25);
+        }
+
+        #start-screen h1 {
+            margin: 0;
+            color: #35dfff;
+            font-size: clamp(28px, 5vw, 46px);
+            letter-spacing: 2px;
+        }
+
+        #start-screen p { color: #b8dce5; }
+
+        #controls-guide {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 20px;
+            margin: 24px auto 4px;
+            max-width: 390px;
+            color: #d7f7ff;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        #controls-guide strong { color: #7ee7ff; }
+
+        #pause-screen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffcc00;
+            color: white;
+            padding: 35px;
+            min-width: 220px;
+            text-align: center;
+            border-radius: 10px;
+            pointer-events: auto;
+        }
+
+        #victory-screen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00cc88;
+            color: white;
+            padding: 35px;
+            min-width: 220px;
+            text-align: center;
+            border-radius: 10px;
+            pointer-events: auto;
+        }
+
+        #victory-screen h1 { color: #00dd99; margin-top: 0; }
+
+        #upgrade-screen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(720px, calc(100vw - 40px));
+            background: rgba(8, 8, 18, 0.96);
+            border: 2px solid #00aaff;
+            color: white;
+            padding: 28px;
+            text-align: center;
+            pointer-events: auto;
+            box-shadow: 0 0 24px rgba(0, 170, 255, 0.3);
+        }
+
+        #upgrade-screen h1 { color: #00ccff; margin: 0 0 8px; }
+
+        #upgrade-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .upgrade-option {
+            display: flex;
+            flex-direction: column;
+            min-height: 125px;
+            margin-top: 0;
+            padding: 16px 12px;
+            background: #123047;
+            border: 1px solid #00aaff;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        .upgrade-option strong { color: #7ee7ff; font-size: 17px; margin-bottom: 10px; }
+        .upgrade-option span { color: #d7f7ff; font-size: 13px; text-transform: none; }
+        .upgrade-option:hover { background: #185277; }
+
+        /* Controles de movimento e ataque para dispositivos com tela de toque. */
+        #touch-controls {
+            display: none;
+            position: absolute;
+            inset: auto 18px 18px;
+            justify-content: space-between;
+            align-items: end;
+            pointer-events: none;
+        }
+
+        .touch-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(2, 48px);
+            gap: 4px;
+        }
+
+        .touch-button {
+            width: 48px;
+            height: 48px;
+            margin: 0;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            background: rgba(20, 20, 20, 0.72);
+            font-size: 20px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .touch-button[data-key="w"] { grid-column: 2; }
+        .touch-button[data-key="a"] { grid-column: 1; grid-row: 2; }
+        .touch-button[data-key="s"] { grid-column: 2; grid-row: 2; }
+        .touch-button[data-key="d"] { grid-column: 3; grid-row: 2; }
+
+        /* Adapta HUD, menus e controles para telas menores e dispositivos de toque. */
+        @media (max-width: 800px), (pointer: coarse) {
+            #touch-controls { display: flex; }
+            .panel { padding: 10px; }
+            #stats-panel { top: 10px; left: 10px; width: 170px; }
+            #wave-panel { top: 10px; right: 10px; }
+            #objective-panel { top: 165px; left: 10px; max-width: 170px; }
+            #objective-panel.objective-announcement { top: 50%; left: 50%; max-width: none; font-size: 18px; }
+            #minimap { top: auto; bottom: 14px; right: 10px; width: 96px; height: 96px; }
+            #game-over, #pause-screen, #victory-screen, #upgrade-screen { max-width: calc(100vw - 70px); padding: 25px; }
+            #game-over h1 { font-size: 28px; }
+            #upgrade-options { grid-template-columns: 1fr; }
+            .upgrade-option { min-height: 0; }
+            #start-screen { padding: 26px 20px; }
+            #controls-guide { grid-template-columns: 1fr; max-width: 210px; }
+        }
+
+        button {
+            background: #ff3333;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #aa0000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sprites usados para desenhar o jogador, inimigos, chefes e efeitos. -->
+    <img id="wizard-sprite" src="MG.png" style="display: none;">
+    <img id="impact-sprite" src="MG.png" style="display: none;">
+    <img id="demon-sprite" src="mons.png" style="display: none;">
+    <img id="boss-sprite" src="mons1.png" style="display: none;">
+    <img id="third-boss-sprite" src="mons2.png" style="display: none;">
+    <img id="ranged-sprite" src="mons3.png" style="display: none;">
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="damage-overlay" aria-hidden="true"></div>
+
+    <!-- Tela inicial com instruções e botão que inicia a partida. -->
+    <div id="start-screen">
+        <h1>VANGUARD</h1>
+        <p>Sobreviva às ondas e domine a dungeon.</p>
+        <div id="controls-guide">
+            <span><strong>W A S D</strong> mover</span>
+            <span><strong>MOUSE</strong> mirar</span>
+            <span><strong>CLIQUE</strong> disparar</span>
+            <span><strong>P / ESC</strong> pausar</span>
+            <span><strong>CELULAR</strong> controles na tela</span>
+        </div>
+        <button onclick="startGame()">JOGAR</button>
+    </div>
+
+    <!-- HUD: vida, mana, pontuação, onda, objetivo e mapa da dungeon. -->
+    <div id="hud">
+        <div id="stats-panel" class="panel">
+            <div class="stat-row">
+                <span>HP</span>
+                <span id="health-text">100/100</span>
+            </div>
+            <div class="bar-container">
+                <div id="health-bar"></div>
+            </div>
+
+            <div class="stat-row text-blue">
+                <span>MANA</span>
+                <span id="ammo-text">30/30</span>
+            </div>
+            <div class="bar-container">
+                <div id="ammo-bar"></div>
+            </div>
+        </div>
+
+        <div id="wave-panel" class="panel">
+            <div class="stat-row" style="justify-content: flex-end;">
+                <span style="margin-right: 15px;">ABATES</span>
+                <span id="kills-text" style="font-size: 24px; margin-top: -5px;">0</span>
+            </div>
+            <div style="color: #ffcc00; font-size: 18px; font-weight: bold; margin-top: 10px;">
+                ONDA <span id="wave-text">1</span>
+            </div>
+            <div style="color: #7ee7ff; font-size: 14px; font-weight: bold; margin-top: 8px;">
+                PONTOS <span id="score-text">0</span>
+            </div>
+        </div>
+
+        <div id="objective-panel" class="panel objective-compact">
+            <div id="objective-text">OBJETIVO: SOBREVIVA</div>
+            <div id="objective-health"></div>
+        </div>
+
+        <canvas id="minimap" width="170" height="170" aria-label="Mapa da dungeon"></canvas>
+    </div>
+
+    <!-- Telas de encerramento da partida e escolha de melhorias entre ondas. -->
+    <div id="game-over">
+        <h1>VOCÊ MORREU</h1>
+        <p>Você sobreviveu até a Onda <span id="final-wave">1</span></p>
+        <p>Monstros eliminados: <span id="final-kills">0</span></p>
+        <p>Pontuação: <span id="final-score">0</span></p>
+        <p>Recorde: <span id="final-best-score">0</span></p>
+        <button onclick="resetGame()">TENTAR NOVAMENTE</button>
+    </div>
+
+    <div id="pause-screen">
+        <h1>PAUSADO</h1>
+        <p>Pressione P ou ESC para continuar</p>
+    </div>
+
+    <div id="victory-screen">
+        <h1>VITÓRIA</h1>
+        <p>Você completou todas as ondas.</p>
+        <p>Monstros eliminados: <span id="victory-kills">0</span></p>
+        <p>Pontuação: <span id="victory-score">0</span></p>
+        <p>Recorde: <span id="victory-best-score">0</span></p>
+        <button onclick="resetGame()">JOGAR NOVAMENTE</button>
+    </div>
+
+    <div id="upgrade-screen">
+        <h1>APRIMORAMENTO</h1>
+        <p>Você sobreviveu à onda <span id="upgrade-wave">1</span>. Escolha uma melhoria:</p>
+        <div id="upgrade-options"></div>
+    </div>
+
+    <!-- Controles alternativos para celulares e tablets. -->
+    <div id="touch-controls" aria-label="Controles de toque">
+        <div class="touch-pad">
+            <button class="touch-button" data-key="w" aria-label="Mover para cima">&#9650;</button>
+            <button class="touch-button" data-key="a" aria-label="Mover para esquerda">&#9664;</button>
+            <button class="touch-button" data-key="s" aria-label="Mover para baixo">&#9660;</button>
+            <button class="touch-button" data-key="d" aria-label="Mover para direita">&#9654;</button>
+        </div>
+        <button class="touch-button" id="touch-attack" aria-label="Atacar">&#10024;</button>
+    </div>
+
+<script>
+// Canvas principal, minimapa, camada de iluminação e dimensões visíveis do jogo.
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const minimapCtx = minimap.getContext('2d');
+const lightCanvas = document.createElement('canvas');
+const lightCtx = lightCanvas.getContext('2d');
+const viewport = { width: window.innerWidth, height: window.innerHeight, dpr: 1 };
+
+// Redimensiona os canvases e mantém a nitidez em telas de alta densidade.
+function resize() {
+    viewport.width = window.innerWidth;
+    viewport.height = window.innerHeight;
+    viewport.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(viewport.width * viewport.dpr);
+    canvas.height = Math.floor(viewport.height * viewport.dpr);
+    lightCanvas.width = canvas.width;
+    lightCanvas.height = canvas.height;
+    ctx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
+    lightCtx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Recorta e desenha um quadro de uma spritesheet na posição atual do canvas.
+function drawSpriteFrame(context, sprite, frameX, frameY, cols, rows, height) {
+    const sourceWidth = sprite.naturalWidth || sprite.width;
+    const sourceHeight = sprite.naturalHeight || sprite.height;
+    const frameWidth = sourceWidth / cols;
+    const frameHeight = sourceHeight / rows;
+    const width = frameWidth / frameHeight * height;
+
+    context.drawImage(
+        sprite,
+        frameX * frameWidth, frameY * frameHeight, frameWidth, frameHeight,
+        -width / 2, -height / 2, width, height
+    );
+}
+
+const STANDARD_SPRITE_HEIGHT = 72;
+const FIREBALL_SPRITE_HEIGHT = 72;
+
+// Geometria fixa da dungeon: salas, paredes e tamanho dos azulejos.
+const dungeon = {
+    tileSize: 80,
+    wallCornerRadius: 18,
+    rooms: [
+        { x: 1120, y: 1120, width: 760, height: 760 },
+        { x: 360, y: 1120, width: 440, height: 360 },
+        { x: 2200, y: 1120, width: 440, height: 360 },
+        { x: 1120, y: 360, width: 360, height: 440 },
+        { x: 1120, y: 2200, width: 360, height: 440 }
+    ],
+    walls: [
+        { x: 760, y: 720, width: 260, height: 96 },
+        { x: 1980, y: 720, width: 260, height: 96 },
+        { x: 760, y: 2184, width: 260, height: 96 },
+        { x: 1980, y: 2184, width: 260, height: 96 },
+        { x: 720, y: 1120, width: 96, height: 300 },
+        { x: 2184, y: 1120, width: 96, height: 300 },
+        { x: 720, y: 1580, width: 96, height: 300 },
+        { x: 2184, y: 1580, width: 96, height: 300 },
+        { x: 1280, y: 640, width: 300, height: 96 },
+        { x: 1280, y: 2264, width: 300, height: 96 },
+        { x: 1180, y: 1220, width: 88, height: 180 },
+        { x: 1732, y: 1600, width: 88, height: 180 }
+    ]
+};
+
+// Verifica sobreposição entre retângulos, com margem opcional.
+function rectanglesOverlap(first, second, padding = 0) {
+    return first.x - padding < second.x + second.width
+        && first.x + first.width + padding > second.x
+        && first.y - padding < second.y + second.height
+        && first.y + first.height + padding > second.y;
+}
+
+// Acrescenta obstáculos aleatórios sem bloquear salas, paredes ou a área inicial.
+function addRandomObstacles() {
+    const randomObstacles = [];
+    const obstacleSizes = [
+        { width: 80, height: 80 },
+        { width: 80, height: 160 },
+        { width: 160, height: 80 }
+    ];
+    const safeStart = { x: 1260, y: 1260, width: 480, height: 480 };
+
+    for (let attempt = 0; attempt < 240 && randomObstacles.length < 10; attempt++) {
+        const size = obstacleSizes[Math.floor(Math.random() * obstacleSizes.length)];
+        const obstacle = {
+            x: 160 + Math.floor(Math.random() * 33) * 80,
+            y: 160 + Math.floor(Math.random() * 33) * 80,
+            width: size.width,
+            height: size.height,
+            random: true
+        };
+
+        const overlapsRoom = dungeon.rooms.some(room => rectanglesOverlap(obstacle, room, 36));
+        const overlapsWall = dungeon.walls.some(wall => rectanglesOverlap(obstacle, wall, 56));
+        const overlapsRandom = randomObstacles.some(other => rectanglesOverlap(obstacle, other, 56));
+
+        if (!overlapsRoom && !overlapsWall && !overlapsRandom && !rectanglesOverlap(obstacle, safeStart, 0)) {
+            randomObstacles.push(obstacle);
+        }
+    }
+
+    dungeon.walls.push(...randomObstacles);
+}
+
+// Desenha o piso, as paredes e os limites do mapa na área visível da câmera.
+function drawDungeon(context) {
+    context.fillStyle = '#0b0c12';
+    context.fillRect(0, 0, viewport.width, viewport.height);
+
+    const tile = dungeon.tileSize;
+    const startX = Math.floor(camera.x / tile) * tile;
+    const startY = Math.floor(camera.y / tile) * tile;
+    const endX = camera.x + viewport.width + tile;
+    const endY = camera.y + viewport.height + tile;
+
+    for (let worldY = startY; worldY < endY; worldY += tile) {
+        for (let worldX = startX; worldX < endX; worldX += tile) {
+            const screenX = worldX - camera.x;
+            const screenY = worldY - camera.y;
+            const tileIndex = Math.abs((worldX / tile) * 17 + (worldY / tile) * 31) % 5;
+            context.fillStyle = tileIndex < 1 ? '#282731' : '#22222b';
+            context.fillRect(screenX, screenY, tile + 1, tile + 1);
+
+            context.strokeStyle = 'rgba(116, 111, 126, 0.12)';
+            context.lineWidth = 1;
+            context.strokeRect(screenX + 1, screenY + 1, tile - 2, tile - 2);
+
+            if (tileIndex === 2) {
+                context.fillStyle = 'rgba(145, 137, 132, 0.12)';
+                context.fillRect(screenX + 18, screenY + 24, 4, 3);
+                context.fillRect(screenX + 54, screenY + 48, 3, 4);
+            }
+        }
+    }
+
+    dungeon.walls.forEach(wall => {
+        const x = wall.x - camera.x;
+        const y = wall.y - camera.y;
+        const gradient = context.createLinearGradient(x, y, x, y + wall.height);
+        gradient.addColorStop(0, '#17151c');
+        gradient.addColorStop(0.45, '#30262d');
+        gradient.addColorStop(1, '#100f15');
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.roundRect(x, y, wall.width, wall.height, dungeon.wallCornerRadius);
+        context.fill();
+        context.strokeStyle = '#0a090d';
+        context.lineWidth = 8;
+        context.beginPath();
+        context.roundRect(x + 4, y + 4, wall.width - 8, wall.height - 8, dungeon.wallCornerRadius - 4);
+        context.stroke();
+
+        context.strokeStyle = 'rgba(150, 112, 96, 0.28)';
+        context.lineWidth = 2;
+        for (let brickY = wall.y + 28; brickY < wall.y + wall.height; brickY += 34) {
+            context.beginPath();
+            context.moveTo(x + 8, brickY - camera.y);
+            context.lineTo(x + wall.width - 8, brickY - camera.y);
+            context.stroke();
+        }
+        for (let brickX = wall.x + 34; brickX < wall.x + wall.width; brickX += 68) {
+            context.beginPath();
+            context.moveTo(brickX - camera.x, y + 8);
+            context.lineTo(brickX - camera.x, y + wall.height - 8);
+            context.stroke();
+        }
+    });
+
+    context.strokeStyle = '#5d3540';
+    context.lineWidth = 10;
+    context.strokeRect(-camera.x + 5, -camera.y + 5, dungeonMapWidth() - 10, dungeonMapHeight() - 10);
+}
+
+function dungeonMapWidth() { return game.width; }
+function dungeonMapHeight() { return game.height; }
+
+// Renderiza a visão geral da dungeon, incluindo jogador, paredes e inimigos.
+function drawMinimap() {
+    const width = minimap.width;
+    const height = minimap.height;
+    const scaleX = width / game.width;
+    const scaleY = height / game.height;
+
+    minimapCtx.clearRect(0, 0, width, height);
+    minimapCtx.fillStyle = '#11121b';
+    minimapCtx.fillRect(0, 0, width, height);
+
+    dungeon.rooms.forEach(room => {
+        minimapCtx.fillStyle = '#292a36';
+        minimapCtx.fillRect(room.x * scaleX, room.y * scaleY, room.width * scaleX, room.height * scaleY);
+    });
+
+    dungeon.walls.forEach(wall => {
+        minimapCtx.fillStyle = '#09090e';
+        minimapCtx.fillRect(wall.x * scaleX, wall.y * scaleY, wall.width * scaleX, wall.height * scaleY);
+    });
+
+    enemies.forEach(enemy => {
+        minimapCtx.fillStyle = enemy.maxHealth ? '#ff4b5c' : '#d96bff';
+        minimapCtx.beginPath();
+        minimapCtx.arc(enemy.x * scaleX, enemy.y * scaleY, 2.5, 0, Math.PI * 2);
+        minimapCtx.fill();
+    });
+
+    minimapCtx.fillStyle = '#55e6ff';
+    minimapCtx.beginPath();
+    minimapCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
+    minimapCtx.fill();
+    minimapCtx.strokeStyle = 'rgba(85, 230, 255, 0.45)';
+    minimapCtx.strokeRect(player.x * scaleX - 6, player.y * scaleY - 6, 12, 12);
+}
+
+// Colisão circular com paredes de cantos arredondados e resolução de movimento.
+function circleTouchesWall(x, y, radius, wall) {
+    const cornerRadius = dungeon.wallCornerRadius;
+    const expandedRadius = cornerRadius + radius;
+    const insideHorizontal = x >= wall.x + cornerRadius
+        && x <= wall.x + wall.width - cornerRadius
+        && y >= wall.y - radius
+        && y <= wall.y + wall.height + radius;
+    const insideVertical = y >= wall.y + cornerRadius
+        && y <= wall.y + wall.height - cornerRadius
+        && x >= wall.x - radius
+        && x <= wall.x + wall.width + radius;
+
+    if (insideHorizontal || insideVertical) return true;
+
+    const corners = [
+        [wall.x + cornerRadius, wall.y + cornerRadius],
+        [wall.x + wall.width - cornerRadius, wall.y + cornerRadius],
+        [wall.x + cornerRadius, wall.y + wall.height - cornerRadius],
+        [wall.x + wall.width - cornerRadius, wall.y + wall.height - cornerRadius]
+    ];
+
+    return corners.some(([cornerX, cornerY]) => {
+        const dx = x - cornerX;
+        const dy = y - cornerY;
+        return dx * dx + dy * dy < expandedRadius * expandedRadius;
+    });
+}
+
+function resolvePlayerPosition(x, y, radius) {
+    let resolvedX = Math.max(radius, Math.min(game.width - radius, x));
+    let resolvedY = Math.max(radius, Math.min(game.height - radius, y));
+    const padding = 1;
+
+    dungeon.walls.forEach(wall => {
+        if (!circleTouchesWall(resolvedX, resolvedY, radius, wall)) return;
+
+        const leftDistance = Math.abs(resolvedX - wall.x);
+        const rightDistance = Math.abs(resolvedX - (wall.x + wall.width));
+        const topDistance = Math.abs(resolvedY - wall.y);
+        const bottomDistance = Math.abs(resolvedY - (wall.y + wall.height));
+        const nearestEdge = Math.min(leftDistance, rightDistance, topDistance, bottomDistance);
+
+        if (nearestEdge === leftDistance) resolvedX = wall.x - radius - padding;
+        else if (nearestEdge === rightDistance) resolvedX = wall.x + wall.width + radius + padding;
+        else if (nearestEdge === topDistance) resolvedY = wall.y - radius - padding;
+        else resolvedY = wall.y + wall.height + radius + padding;
+    });
+
+    return {
+        x: Math.max(radius, Math.min(game.width - radius, resolvedX)),
+        y: Math.max(radius, Math.min(game.height - radius, resolvedY))
+    };
+}
+
+function canOccupyPosition(x, y, radius) {
+    return x >= radius && x <= game.width - radius
+        && y >= radius && y <= game.height - radius
+        && !dungeon.walls.some(wall => circleTouchesWall(x, y, radius, wall));
+}
+
+function moveWithWallSlide(x, y, dx, dy, radius, dt) {
+    const nextX = x + dx * dt;
+    const nextY = y + dy * dt;
+    const resolvedX = canOccupyPosition(nextX, y, radius) ? nextX : x;
+    const resolvedY = canOccupyPosition(resolvedX, nextY, radius) ? nextY : y;
+    return { x: resolvedX, y: resolvedY };
+}
+
+function recoverFromWall(entity) {
+    if (canOccupyPosition(entity.x, entity.y, entity.radius)) return;
+
+    for (let distance = 8; distance <= 160; distance += 8) {
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+            const x = entity.x + Math.cos(angle) * distance;
+            const y = entity.y + Math.sin(angle) * distance;
+            if (canOccupyPosition(x, y, entity.radius)) {
+                entity.x = x;
+                entity.y = y;
+                entity.wallSlideDirection = 0;
+                return;
+            }
+        }
+    }
+}
+
+function getEnemySeparation(enemy) {
+    let separationX = 0;
+    let separationY = 0;
+    const separationRadius = 92;
+    const enemyIndex = Math.max(0, enemies.indexOf(enemy));
+
+    enemies.forEach(other => {
+        if (other === enemy) return;
+
+        const dx = enemy.x - other.x;
+        const dy = enemy.y - other.y;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance > 0 && distance < separationRadius) {
+            const strength = Math.max(0, separationRadius - distance) / separationRadius;
+            const direction = 1 / distance;
+            separationX += dx * direction * strength;
+            separationY += dy * direction * strength;
+
+            if (Math.abs(dy) < enemy.radius * 0.75) {
+                const side = enemyIndex % 2 === 0 ? 1 : -1;
+                separationY += side * strength * 0.8;
+            }
+        } else if (distance === 0) {
+            separationX += Math.random() - 0.5;
+            separationY += Math.random() - 0.5;
+        }
+    });
+
+    return { x: separationX, y: separationY };
+}
+
+function moveEnemyAroundWalls(enemy, targetX, targetY, dt) {
+    const dx = targetX - enemy.x;
+    const dy = targetY - enemy.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance === 0) return { x: enemy.x, y: enemy.y };
+
+    recoverFromWall(enemy);
+
+    const separation = getEnemySeparation(enemy);
+    const steeredX = dx + separation.x * 130;
+    const steeredY = dy + separation.y * 130;
+    const steeredDistance = Math.hypot(steeredX, steeredY) || 1;
+    const directionX = steeredX / steeredDistance;
+    const directionY = steeredY / steeredDistance;
+    const step = enemy.speed * dt;
+    const directTargetX = enemy.x + directionX * step;
+    const directTargetY = enemy.y + directionY * step;
+    const blockingWall = dungeon.walls.find(wall =>
+        circleTouchesWall(directTargetX, directTargetY, enemy.radius, wall)
+    );
+
+    const canMoveTo = (x, y) => canOccupyPosition(x, y, enemy.radius);
+
+    if (!blockingWall && canMoveTo(directTargetX, directTargetY)) {
+        enemy.wallSlideDirection = 0;
+        return { x: directTargetX, y: directTargetY };
+    }
+
+    if (!enemy.wallSlideDirection) {
+        const towardFirstOpening = blockingWall && blockingWall.height >= blockingWall.width
+            ? (targetY < blockingWall.y + blockingWall.height / 2 ? -1 : 1)
+            : (targetX < blockingWall.x + blockingWall.width / 2 ? -1 : 1);
+        enemy.wallSlideDirection = towardFirstOpening;
+    }
+
+    const slideCandidates = blockingWall && blockingWall.height >= blockingWall.width
+        ? [
+            { x: enemy.x, y: enemy.y + enemy.wallSlideDirection * step },
+            { x: enemy.x, y: enemy.y - enemy.wallSlideDirection * step },
+            { x: enemy.x + directionX * step * 0.35, y: enemy.y }
+        ]
+        : [
+            { x: enemy.x + enemy.wallSlideDirection * step, y: enemy.y },
+            { x: enemy.x - enemy.wallSlideDirection * step, y: enemy.y },
+            { x: enemy.x, y: enemy.y + directionY * step * 0.35 }
+        ];
+
+    for (const candidate of slideCandidates) {
+        if (canMoveTo(candidate.x, candidate.y)) return candidate;
+    }
+
+    enemy.wallSlideDirection *= -1;
+    return { x: enemy.x, y: enemy.y };
+}
+
+function resolveEnemyPlayerCollision(enemy) {
+    let dx = enemy.x - player.x;
+    let dy = enemy.y - player.y;
+    let distance = Math.hypot(dx, dy);
+    const requiredDistance = enemy.radius + player.radius + 6;
+
+    if (distance >= requiredDistance) return false;
+
+    if (distance === 0) {
+        dx = 1;
+        dy = 0;
+        distance = 1;
+    }
+
+    const push = requiredDistance - distance;
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+    const enemyPosition = {
+        x: enemy.x + directionX * push,
+        y: enemy.y + directionY * push
+    };
+
+    if (canOccupyPosition(enemyPosition.x, enemyPosition.y, enemy.radius)) {
+        enemy.x = enemyPosition.x;
+        enemy.y = enemyPosition.y;
+    }
+
+    return true;
+}
+
+// Prepara a spritesheet do jogador e remove pixels escuros do fundo da imagem.
+const wizardImage = document.getElementById('wizard-sprite');
+const wizardSprite = document.createElement('canvas');
+const wizardGrid = { cols: 5, rows: 5, cellSize: 400, inset: 8 };
+
+function prepareWizardSprite() {
+    if (!wizardImage.naturalWidth) return;
+
+    wizardSprite.width = wizardGrid.cols * wizardGrid.cellSize;
+    wizardSprite.height = wizardGrid.rows * wizardGrid.cellSize;
+    const spriteContext = wizardSprite.getContext('2d', { willReadFrequently: true });
+    spriteContext.clearRect(0, 0, wizardSprite.width, wizardSprite.height);
+
+    const sourceCellWidth = wizardImage.naturalWidth / wizardGrid.cols;
+    const sourceCellHeight = wizardImage.naturalHeight / wizardGrid.rows;
+
+    for (let row = 0; row < wizardGrid.rows; row++) {
+        for (let col = 0; col < wizardGrid.cols; col++) {
+            spriteContext.drawImage(
+                wizardImage,
+                col * sourceCellWidth + wizardGrid.inset,
+                row * sourceCellHeight + wizardGrid.inset,
+                sourceCellWidth - wizardGrid.inset * 2,
+                sourceCellHeight - wizardGrid.inset * 2,
+                col * wizardGrid.cellSize,
+                row * wizardGrid.cellSize,
+                wizardGrid.cellSize,
+                wizardGrid.cellSize
+            );
+        }
+    }
+
+    const pixels = spriteContext.getImageData(0, 0, wizardSprite.width, wizardSprite.height);
+    for (let index = 0; index < pixels.data.length; index += 4) {
+        const red = pixels.data[index];
+        const green = pixels.data[index + 1];
+        const blue = pixels.data[index + 2];
+        if (red < 24 && green < 24 && blue < 24) pixels.data[index + 3] = 0;
+    }
+    spriteContext.putImageData(pixels, 0, 0);
+}
+
+wizardImage.addEventListener('load', prepareWizardSprite);
+if (wizardImage.complete) prepareWizardSprite();
+
+// Estado geral da partida e parâmetros da progressão por ondas.
+const game = {
+    state: 'menu',
+    lastTime: 0,
+    width: 3000, 
+    height: 3000,
+    kills: 0,
+    score: 0,
+    wave: 1,
+    enemiesToSpawn: 10,
+    spawnTimer: 0,
+    maxWave: 10,
+    animationFrameId: null
+};
+
+// Aprimoramentos disponíveis ao concluir ondas e seus efeitos no jogador.
+const upgradePool = [
+    {
+        title: 'PODER ARCANO',
+        description: '+10 de dano por disparo',
+        apply() { player.bulletDamage += 10; }
+    },
+    {
+        title: 'DISPARO DUPLO',
+        description: 'Lança 2 bolas de fogo por ataque',
+        available() { return player.projectileCount === 1; },
+        apply() { player.projectileCount = 2; }
+    },
+    {
+        title: 'DISPARO TRIPLO',
+        description: 'Lança 3 bolas de fogo por ataque',
+        available() { return player.projectileCount === 2; },
+        apply() { player.projectileCount = 3; }
+    },
+    {
+        title: 'FOGO AZUL',
+        description: 'Bolas azuis com +10% de dano e velocidade',
+        available() { return player.projectileCount === 3 && !player.blueFireball; },
+        apply() { player.blueFireball = true; }
+    },
+    {
+        title: 'PASSOS LIGEIROS',
+        description: '+35 de velocidade de movimento',
+        apply() { player.speed += 35; }
+    },
+    {
+        title: 'RESERVA DE MANA',
+        description: '+8 de mana máxima',
+        apply() {
+            player.maxAmmo += 8;
+            player.ammo = player.maxAmmo;
+        }
+    },
+    {
+        title: 'VITALIDADE',
+        description: '+25 de vida máxima e cura',
+        apply() {
+            player.maxHealth += 25;
+            player.health = player.maxHealth;
+        }
+    },
+    {
+        title: 'CANALIZAÇÃO RÁPIDA',
+        description: 'Disparos 15% mais rápidos',
+        apply() { player.fireRate = Math.max(0.1, player.fireRate * 0.85); }
+    }
+];
+
+addRandomObstacles();
+
+// Entrada de teclado, mouse e toque; os estados são consultados durante a atualização.
+const keys = { w: false, a: false, s: false, d: false };
+const mouse = { x: viewport.width / 2, y: viewport.height / 2, leftDown: false };
+
+window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    if (!e.repeat && (key === 'p' || key === 'escape')) togglePause();
+    if (Object.prototype.hasOwnProperty.call(keys, key)) keys[key] = true;
+});
+window.addEventListener('keyup', e => {
+    const key = e.key.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(keys, key)) keys[key] = false;
+});
+window.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('pointerdown', e => { if(e.button === 0) mouse.leftDown = true; });
+window.addEventListener('pointerup', e => { if(e.button === 0) mouse.leftDown = false; });
+window.addEventListener('blur', () => {
+    keys.w = keys.a = keys.s = keys.d = false;
+    mouse.leftDown = false;
+});
+
+document.querySelectorAll('.touch-button[data-key]').forEach(button => {
+    const key = button.dataset.key;
+    const press = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        keys[key] = true;
+        button.setPointerCapture?.(event.pointerId);
+    };
+    const release = event => {
+        event.preventDefault();
+        keys[key] = false;
+    };
+    button.addEventListener('pointerdown', press);
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('lostpointercapture', release);
+});
+
+const attackButton = document.getElementById('touch-attack');
+attackButton.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    mouse.leftDown = true;
+    attackButton.setPointerCapture?.(event.pointerId);
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+    attackButton.addEventListener(type, event => {
+        event.preventDefault();
+        mouse.leftDown = false;
+    });
+});
+
+const camera = { x: 0, y: 0 };
+
+// Jogador: movimento, mira, animações, disparo, munição e recarga.
+class Player {
+    constructor() {
+        this.x = game.width / 2;
+        this.y = game.height / 2;
+        this.speed = 220;
+        this.radius = 20;
+        this.maxHealth = 100;
+        this.health = 100;
+        this.maxAmmo = 30;
+        this.ammo = 30;
+        this.bulletDamage = 35;
+        this.projectileCount = 1;
+        this.blueFireball = false;
+        
+        this.shootTimer = 0;
+        this.fireRate = 0.25; 
+        this.reloading = false;
+        this.reloadTimer = 0;
+        this.reloadTime = 1.5;
+        
+        this.angle = 0;
+        this.isFacingLeft = false;
+        this.sprite = wizardSprite;
+        
+        this.cols = 5;
+        this.rows = 5; 
+        this.frameX = 0;
+        this.frameY = 0;
+        this.animTimer = 0;
+        this.animSpeed = 0.12; 
+        this.isCasting = false;
+    }
+
+    update(dt) {
+        if (this.health <= 0) return;
+
+        recoverFromWall(this);
+
+        let dx = 0; let dy = 0;
+        if (keys.w) dy -= 1;
+        if (keys.s) dy += 1;
+        if (keys.a) dx -= 1;
+        if (keys.d) dx += 1;
+
+        if (dx !== 0 && dy !== 0) {
+            const length = Math.sqrt(dx * dx + dy * dy);
+            dx /= length; dy /= length;
+        }
+
+        const nextPosition = moveWithWallSlide(
+            this.x,
+            this.y,
+            dx * this.speed,
+            dy * this.speed,
+            this.radius,
+            dt
+        );
+        this.x = nextPosition.x;
+        this.y = nextPosition.y;
+
+        const targetX = mouse.x + camera.x;
+        const targetY = mouse.y + camera.y;
+        this.angle = Math.atan2(targetY - this.y, targetX - this.x);
+        this.isFacingLeft = targetX < this.x;
+
+        this.animTimer += dt;
+        if (this.animTimer >= this.animSpeed) {
+            this.animTimer = 0;
+            this.frameX++;
+
+            const animationFrames = this.frameY === 1 ? 4 : this.cols;
+            if (this.frameX >= animationFrames) {
+                this.frameX = 0;
+                if (this.isCasting) {
+                    this.isCasting = false;
+                    this.frameY = 0; 
+                }
+            }
+        }
+
+        if (this.reloading) {
+            this.isCasting = false;
+            this.frameY = 0;
+            this.reloadTimer -= dt;
+            if (this.reloadTimer <= 0) {
+                this.ammo = this.maxAmmo;
+                this.reloading = false;
+                updateHUD();
+            }
+        } else {
+            this.shootTimer -= dt;
+            if (mouse.leftDown && this.shootTimer <= 0 && this.ammo > 0) {
+                this.shoot();
+            } else if (this.ammo <= 0 && !this.reloading) {
+                this.reloading = true;
+                this.reloadTimer = this.reloadTime;
+            }
+        }
+    }
+
+    shoot() {
+        this.ammo--;
+        this.shootTimer = this.fireRate;
+        
+        this.isCasting = true;
+        this.frameY = 1; 
+        this.frameX = 0;
+        
+        const projectileSpread = this.projectileCount === 1 ? [0] : this.projectileCount === 2
+            ? [-0.1, 0.1]
+            : [-0.14, 0, 0.14];
+        projectileSpread.forEach(offset => {
+            const spread = (Math.random() - 0.5) * 0.04;
+            bullets.push(new Fireball(
+                this.x,
+                this.y,
+                this.angle + offset + spread,
+                this.bulletDamage,
+                this.blueFireball
+            ));
+        });
+        
+        for(let i=0; i<3; i++) {
+            particles.push(new Particle(
+                this.x + (this.isFacingLeft ? -20 : 20), this.y - 5, 
+                '#00aaff', 4, 0.3, (Math.random()-0.5)*100, (Math.random()-0.5)*100
+            ));
+        }
+        updateHUD();
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        
+        if (this.isFacingLeft) {
+            ctx.scale(-1, 1);
+        }
+
+        if (this.sprite.width > 0) {
+            drawSpriteFrame(ctx, this.sprite, this.frameX, this.frameY, this.cols, this.rows, STANDARD_SPRITE_HEIGHT, 0.5, 1);
+        } else {
+            ctx.fillStyle = '#2b6cb0';
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.restore();
+    }
+}
+
+// Projétil do jogador: movimento, dano, vida útil e efeito visual.
+class Fireball {
+    constructor(x, y, angle, damage, isBlue = false) {
+        this.x = x;
+        this.y = y;
+        this.isBlue = isBlue;
+        this.speed = isBlue ? 880 : 800;
+        this.vx = Math.cos(angle) * this.speed;
+        this.vy = Math.sin(angle) * this.speed;
+        this.life = 1.2; 
+        this.damage = isBlue ? damage * 1.1 : damage;
+    }
+
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.life -= dt;
+        
+        if(Math.random() > 0.5) {
+            particles.push(new Particle(this.x, this.y, this.isBlue ? '#42d9ff' : '#ff4400', 3, 0.2, 0, 0));
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        ctx.rotate(Math.atan2(this.vy, this.vx));
+        if (this.isBlue) {
+            ctx.shadowColor = '#35dfff';
+            ctx.shadowBlur = 18;
+        }
+        const frameX = Math.min(4, Math.floor((1.2 - this.life) * 12) % 5);
+        drawSpriteFrame(ctx, wizardSprite, frameX, 2, 5, 5, FIREBALL_SPRITE_HEIGHT, 0.5, 0.5);
+        ctx.restore();
+    }
+}
+
+// Efeito breve desenhado quando um projétil atinge um alvo ou uma parede.
+class ImpactEffect {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.life = 0.28;
+        this.maxLife = this.life;
+        this.sprite = document.getElementById('impact-sprite');
+    }
+
+    update(dt) {
+        this.life -= dt;
+    }
+
+    draw(ctx) {
+        const progress = 1 - Math.max(0, this.life) / this.maxLife;
+        const size = 72 + progress * 24;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, 1 - progress);
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        if (this.sprite.complete && this.sprite.naturalWidth > 0) {
+            drawSpriteFrame(ctx, this.sprite, 1, 4, 5, 5, size, 0.5, 0.5);
+        }
+        ctx.restore();
+    }
+}
+
+// Inimigo Comum (Demônio)
+class DemonEnemy {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.radius = 16;
+        this.sprite = document.getElementById('demon-sprite');
+        
+        if (type === 1) { 
+            this.speed = 180;
+            this.health = 30;
+            this.damage = 10;
+            this.spriteHeight = STANDARD_SPRITE_HEIGHT;
+        } else if (type === 2) { 
+            this.speed = 60;
+            this.health = 200;
+            this.damage = 30;
+            this.spriteHeight = STANDARD_SPRITE_HEIGHT;
+            this.radius = 24;
+        } else { 
+            this.speed = 110;
+            this.health = 60;
+            this.damage = 15;
+            this.spriteHeight = STANDARD_SPRITE_HEIGHT;
+        }
+        
+        this.cols = 3;
+        this.rows = 4;
+        this.frameX = 0;
+        this.frameY = 0;
+        this.hitTimer = 0;
+        this.animTimer = 0;
+        this.animSpeed = 0.15;
+    }
+
+    update(dt) {
+        if (this.hitTimer > 0) this.hitTimer -= dt;
+
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0) {
+            const nextPosition = moveEnemyAroundWalls(this, player.x, player.y, dt);
+            this.x = nextPosition.x;
+            this.y = nextPosition.y;
+            
+            const angle = Math.atan2(dy, dx);
+            if (angle > -Math.PI/4 && angle <= Math.PI/4) this.frameY = 2; 
+            else if (angle > Math.PI/4 && angle <= 3*Math.PI/4) this.frameY = 0; 
+            else if (angle > -3*Math.PI/4 && angle <= -Math.PI/4) this.frameY = 3; 
+            else this.frameY = 1; 
+        }
+
+        if (resolveEnemyPlayerCollision(this)) {
+            applyPlayerDamage(this.damage * dt);
+        }
+
+        this.animTimer += dt;
+        if (this.animTimer >= this.animSpeed) {
+            this.animTimer = 0;
+            this.frameX = (this.frameX + 1) % this.cols;
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        
+        if (this.hitTimer > 0) ctx.globalAlpha = 0.5;
+
+        if (this.sprite.complete && this.sprite.naturalWidth > 0) {
+            drawSpriteFrame(ctx, this.sprite, this.frameX, this.frameY, this.cols, this.rows, this.spriteHeight);
+        } else {
+            ctx.fillStyle = '#805ad5';
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.restore();
+    }
+}
+
+// Inimigo que mantém distância e dispara projéteis contra o jogador.
+class RangedDemonEnemy extends DemonEnemy {
+    constructor(x, y) {
+        super(x, y, 0);
+        this.speed = 75;
+        this.health = 45;
+        this.maxHealth = this.health;
+        this.damage = 8;
+        this.radius = 18;
+        this.shootTimer = 1.2;
+        this.attackTimer = 0;
+        this.sprite = document.getElementById('ranged-sprite');
+        this.cols = 4;
+        this.rows = 4;
+    }
+
+    update(dt) {
+        if (this.hitTimer > 0) this.hitTimer -= dt;
+        if (this.attackTimer > 0) {
+            this.attackTimer -= dt;
+            const attackProgress = 1 - Math.max(0, this.attackTimer) / 0.6;
+            this.frameY = Math.min(this.rows - 1, 2 + Math.floor(attackProgress * 2));
+            if (this.attackTimer <= 0) this.frameY = 0;
+        }
+
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > 360) {
+            const nextPosition = moveEnemyAroundWalls(this, player.x, player.y, dt);
+            this.x = nextPosition.x;
+            this.y = nextPosition.y;
+        } else if (distance < 240) {
+            const nextPosition = moveEnemyAroundWalls(this, this.x - dx, this.y - dy, dt);
+            this.x = nextPosition.x;
+            this.y = nextPosition.y;
+        }
+
+        this.shootTimer -= dt;
+        if (this.shootTimer <= 0 && distance < 650) {
+            enemyProjectiles.push(new EnemyProjectile(this.x, this.y, Math.atan2(dy, dx)));
+            this.shootTimer = 1.8;
+            this.attackTimer = 0.6;
+            this.frameY = 2;
+        }
+
+        this.animTimer += dt;
+        if (this.animTimer >= this.animSpeed) {
+            this.animTimer = 0;
+            this.frameX = (this.frameX + 1) % this.cols;
+        }
+    }
+
+    draw(ctx) {
+        super.draw(ctx);
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        ctx.strokeStyle = '#ffcc55';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius + 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+// Inimigo explosivo que causa dano em área ao ser derrotado.
+class ExplosiveDemonEnemy extends DemonEnemy {
+    constructor(x, y) {
+        super(x, y, 0);
+        this.speed = 145;
+        this.health = 70;
+        this.maxHealth = this.health;
+        this.damage = 12;
+        this.radius = 20;
+    }
+
+    onDeath() {
+        const explosionRadius = 125;
+        const distance = Math.hypot(player.x - this.x, player.y - this.y);
+        if (distance < explosionRadius) {
+            applyPlayerDamage(35 * (1 - distance / explosionRadius));
+        }
+
+        for (let index = 0; index < 18; index++) {
+            const angle = Math.random() * Math.PI * 2;
+            particles.push(new Particle(
+                this.x,
+                this.y,
+                '#ff8a3d',
+                5,
+                0.45,
+                Math.cos(angle) * 180,
+                Math.sin(angle) * 180
+            ));
+        }
+        impacts.push(new ImpactEffect(this.x, this.y));
+    }
+
+    draw(ctx) {
+        super.draw(ctx);
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        ctx.fillStyle = '#ff8a3d';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5 + Math.sin(performance.now() / 90) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// Projétil hostil: avança pela dungeon e pode atingir o jogador ou uma parede.
+class EnemyProjectile {
+    constructor(x, y, angle) {
+        this.x = x;
+        this.y = y;
+        this.speed = 260;
+        this.vx = Math.cos(angle) * this.speed;
+        this.vy = Math.sin(angle) * this.speed;
+        this.life = 3;
+        this.radius = 7;
+    }
+
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.life -= dt;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = '#ffcc55';
+        ctx.shadowColor = '#ff8a3d';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// Itens temporários que recuperam vida ou mana quando coletados.
+class Pickup {
+    constructor(x, y, type, secret = false) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.secret = secret;
+        this.radius = 18;
+        this.life = 18;
+        this.animTime = Math.random() * Math.PI * 2;
+    }
+
+    update(dt) {
+        this.life -= dt;
+        this.animTime += dt * 3;
+        if (Math.hypot(player.x - this.x, player.y - this.y) < player.radius + this.radius) {
+            if (this.type === 'health') {
+                player.health = Math.min(player.maxHealth, player.health + 30);
+            } else {
+                player.ammo = Math.min(player.maxAmmo, player.ammo + 12);
+            }
+            updateHUD();
+            return true;
+        }
+        return this.life <= 0;
+    }
+
+    draw(context) {
+        const size = this.radius + Math.sin(this.animTime) * 3;
+        context.save();
+        context.translate(this.x - camera.x, this.y - camera.y);
+        context.shadowColor = this.type === 'health' ? '#ff496c' : '#35dfff';
+        context.shadowBlur = 18;
+        context.fillStyle = this.type === 'health' ? '#ff496c' : '#35dfff';
+        context.beginPath();
+        context.arc(0, 0, size, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#10131c';
+        context.font = 'bold 18px Courier New';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(this.type === 'health' ? '+' : 'M', 0, 1);
+        context.restore();
+    }
+}
+
+// Chefe 1 (Sprite 4x4 com Barra de Vida)
+class BossEnemy {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 22;
+        this.speed = 95;           
+        this.health = 250 + (game.wave * 50); 
+        this.maxHealth = this.health;
+        this.damage = 35;          
+        this.spriteHeight = STANDARD_SPRITE_HEIGHT;
+        this.sprite = document.getElementById('boss-sprite');
+        
+        this.cols = 4;
+        this.rows = 4;
+        this.frameX = 0;
+        this.frameY = 0;
+        this.hitTimer = 0;
+        this.animTimer = 0;
+        this.animSpeed = 0.12;
+    }
+
+    update(dt) {
+        if (this.hitTimer > 0) this.hitTimer -= dt;
+
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0) {
+            const nextPosition = moveEnemyAroundWalls(this, player.x, player.y, dt);
+            this.x = nextPosition.x;
+            this.y = nextPosition.y;
+            
+            const angle = Math.atan2(dy, dx);
+            if (angle > -Math.PI/4 && angle <= Math.PI/4) this.frameY = 2; 
+            else if (angle > Math.PI/4 && angle <= 3*Math.PI/4) this.frameY = 0; 
+            else if (angle > -3*Math.PI/4 && angle <= -Math.PI/4) this.frameY = 3; 
+            else this.frameY = 1; 
+        }
+
+        if (resolveEnemyPlayerCollision(this)) {
+            applyPlayerDamage(this.damage * dt);
+        }
+
+        this.animTimer += dt;
+        if (this.animTimer >= this.animSpeed) {
+            this.animTimer = 0;
+            this.frameX = (this.frameX + 1) % this.cols;
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        
+        if (this.hitTimer > 0) ctx.globalAlpha = 0.6;
+
+        if (this.sprite.complete && this.sprite.naturalWidth > 0) {
+            drawSpriteFrame(ctx, this.sprite, this.frameX, this.frameY, this.cols, this.rows, this.spriteHeight);
+        } else {
+            ctx.fillStyle = '#ff0055';
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.fillStyle = '#222';
+        ctx.fillRect(-20, -35, 40, 6);
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(-20, -35, 40 * (this.health / this.maxHealth), 6);
+
+        ctx.restore();
+    }
+}
+
+// TERCEIRO SPRITE CORRIGIDO (mons1.png - Grade 4x4 sem barra de vida)
+class ThirdBossEnemy {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 22;
+        this.speed = 105;          
+        this.health = 350 + (game.wave * 60); 
+        this.maxHealth = this.health;
+        this.damage = 40;          
+        this.spriteHeight = STANDARD_SPRITE_HEIGHT;
+        this.sprite = document.getElementById('third-boss-sprite');
+        
+        // Ajustado para o padrão exato de 4 colunas e 4 linhas do mons1.png
+        this.cols = 4;
+        this.rows = 4;
+        this.frameX = 0;
+        this.frameY = 0;
+        this.hitTimer = 0;
+        this.animTimer = 0;
+        this.animSpeed = 0.12;
+    }
+
+    update(dt) {
+        if (this.hitTimer > 0) this.hitTimer -= dt;
+
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0) {
+            const nextPosition = moveEnemyAroundWalls(this, player.x, player.y, dt);
+            this.x = nextPosition.x;
+            this.y = nextPosition.y;
+            
+            const angle = Math.atan2(dy, dx);
+            // Mapeamento correto das 4 linhas direcionais do mons1.png
+            if (angle > -Math.PI/4 && angle <= Math.PI/4) this.frameY = 2; // Direita (Linha 3)
+            else if (angle > Math.PI/4 && angle <= 3*Math.PI/4) this.frameY = 0; // Frente (Linha 1)
+            else if (angle > -3*Math.PI/4 && angle <= -Math.PI/4) this.frameY = 3; // Costas (Linha 4)
+            else this.frameY = 1; // Esquerda (Linha 2)
+        }
+
+        if (resolveEnemyPlayerCollision(this)) {
+            applyPlayerDamage(this.damage * dt);
+        }
+
+        this.animTimer += dt;
+        if (this.animTimer >= this.animSpeed) {
+            this.animTimer = 0;
+            this.frameX = (this.frameX + 1) % this.cols;
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x - camera.x, this.y - camera.y);
+        
+        if (this.hitTimer > 0) ctx.globalAlpha = 0.6;
+
+        if (this.sprite.complete && this.sprite.naturalWidth > 0) {
+            drawSpriteFrame(ctx, this.sprite, this.frameX, this.frameY, this.cols, this.rows, this.spriteHeight);
+        } else {
+            ctx.fillStyle = '#00ffcc';
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Sem barra de vida conforme solicitado
+
+        ctx.restore();
+    }
+}
+
+// Partículas temporárias usadas para impactos, disparos e efeitos de morte.
+class Particle {
+    constructor(x, y, color, size, life, vx, vy) {
+        this.x = x; this.y = y; this.color = color;
+        this.size = size; this.life = life; this.maxLife = life;
+        this.vx = vx; this.vy = vy;
+    }
+    update(dt) {
+        this.x += this.vx * dt; this.y += this.vy * dt;
+        this.life -= dt;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x - camera.x - this.size/2, this.y - camera.y - this.size/2, this.size, this.size);
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+// Coleções de entidades e efeitos que são atualizadas e desenhadas a cada quadro.
+let player = new Player();
+let bullets = [];
+let enemies = [];
+let enemyProjectiles = [];
+let particles = [];
+let bloodStains = [];
+let impacts = [];
+let damageOverlayStrength = 0;
+let objective = null;
+let objectiveAnnouncementTimer = null;
+let objectiveAnnouncementShown = false;
+let pickups = [];
+
+// Escolhe e posiciona um inimigo de acordo com a onda atual.
+function spawnEnemy() {
+    const margin = Math.max(viewport.width, viewport.height) / 2 + 100;
+    let x, y;
+    if (Math.random() > 0.5) {
+        x = player.x + (Math.random() > 0.5 ? margin : -margin);
+        y = player.y + (Math.random() * margin * 2 - margin);
+    } else {
+        x = player.x + (Math.random() * margin * 2 - margin);
+        y = player.y + (Math.random() > 0.5 ? margin : -margin);
+    }
+
+    x = Math.max(30, Math.min(game.width - 30, x));
+    y = Math.max(30, Math.min(game.height - 30, y));
+
+    let enemy;
+    if (game.wave >= 5 && Math.random() < 0.2) {
+        enemy = new ThirdBossEnemy(x, y); 
+    } else if (game.wave >= 3 && Math.random() < 0.25) {
+        enemy = new BossEnemy(x, y); 
+    } else {
+        let type = 0;
+        let r = Math.random();
+        if (game.wave > 2 && r < 0.15) type = 1; 
+        else if (game.wave > 4 && r > 0.85) type = 2; 
+
+        if (game.wave >= 3 && r >= 0.15 && r < 0.28) {
+            enemy = new RangedDemonEnemy(x, y);
+        } else if (game.wave >= 4 && r >= 0.72 && r < 0.85) {
+            enemy = new ExplosiveDemonEnemy(x, y);
+        } else {
+            enemy = new DemonEnemy(x, y, type);
+        }
+    }
+
+    recoverFromWall(enemy);
+    enemies.push(enemy);
+    
+    game.enemiesToSpawn--;
+}
+
+// Registra manchas e partículas visuais quando um inimigo é atingido.
+function createBlood(x, y) {
+    bloodStains.push({
+        x: x, y: y, 
+        size: Math.random() * 15 + 10,
+        alpha: Math.random() * 0.4 + 0.2
+    });
+    if (bloodStains.length > 200) bloodStains.shift(); 
+
+    for(let i=0; i<8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 150 + 50;
+        particles.push(new Particle(
+            x, y, '#4a154b', Math.random() * 4 + 2, Math.random() * 0.4 + 0.1,  
+            Math.cos(angle) * speed, Math.sin(angle) * speed
+        ));
+    }
+}
+
+// Atualiza os textos e barras de vida, mana, pontuação e objetivo.
+function updateHUD() {
+    document.getElementById('health-text').innerText = `${Math.ceil(Math.max(0, player.health))}/${player.maxHealth}`;
+    document.getElementById('health-bar').style.width = `${(Math.max(0, player.health) / player.maxHealth) * 100}%`;
+    
+    document.getElementById('ammo-text').innerText = player.reloading ? "CANALIZANDO..." : `${player.ammo}/${player.maxAmmo}`;
+    document.getElementById('ammo-bar').style.width = `${(Math.max(0, player.ammo) / player.maxAmmo) * 100}%`;
+    
+    document.getElementById('kills-text').innerText = game.kills;
+    document.getElementById('wave-text').innerText = game.wave;
+    document.getElementById('score-text').innerText = game.score.toLocaleString('pt-BR');
+    document.getElementById('objective-text').innerText = objective
+        ? 'OBJETIVO: DESTRUA O CRISTAL'
+        : 'OBJETIVO: SOBREVIVA';
+    document.getElementById('objective-health').innerText = objective
+        ? `CRISTAL: ${Math.ceil(objective.health)}/${objective.maxHealth}`
+        : '';
+}
+
+// Aplica dano ao jogador e encerra a partida quando a vida chega a zero.
+function applyPlayerDamage(amount) {
+    if (game.state !== 'playing') return;
+
+    player.health -= amount;
+    damageOverlayStrength = Math.min(0.85, damageOverlayStrength + Math.min(0.3, amount / 100));
+    updateHUD();
+    if (player.health <= 0) gameOver();
+}
+
+// Atenua gradualmente o aviso visual de dano recebido.
+function updateDamageOverlay(dt) {
+    damageOverlayStrength = Math.max(0, damageOverlayStrength - dt * 0.75);
+    document.getElementById('damage-overlay').style.opacity = damageOverlayStrength;
+}
+
+// Lê e grava o recorde local da partida no armazenamento do navegador.
+function getBestScore() {
+    return Number(localStorage.getItem('vanguardBestScore') || 0);
+}
+
+function saveBestScore() {
+    const bestScore = Math.max(getBestScore(), game.score);
+    localStorage.setItem('vanguardBestScore', bestScore);
+    return bestScore;
+}
+
+function getEnemyScore(enemy) {
+    if (enemy instanceof ThirdBossEnemy) return 500;
+    if (enemy instanceof BossEnemy) return 300;
+    if (enemy instanceof ExplosiveDemonEnemy) return 175;
+    if (enemy instanceof RangedDemonEnemy) return 150;
+    if (enemy instanceof DemonEnemy && enemy.speed >= 160) return 125;
+    if (enemy instanceof DemonEnemy && enemy.health >= 150) return 200;
+    return 100;
+}
+
+// Exibe por alguns segundos o anúncio de objetivo da onda.
+function showObjectiveAnnouncement() {
+    if (objectiveAnnouncementShown) return;
+
+    const panel = document.getElementById('objective-panel');
+    objectiveAnnouncementShown = true;
+    clearTimeout(objectiveAnnouncementTimer);
+    panel.classList.remove('objective-compact');
+    panel.classList.add('objective-announcement');
+
+    objectiveAnnouncementTimer = setTimeout(() => {
+        panel.classList.remove('objective-announcement');
+        panel.classList.add('objective-compact');
+    }, 2400);
+}
+
+// Define o objetivo especial das ondas múltiplas de três.
+function setupWaveObjective() {
+    objective = null;
+    if (game.wave % 3 !== 0) {
+        updateHUD();
+        return;
+    }
+
+    const room = dungeon.rooms[(game.wave / 3 - 1) % dungeon.rooms.length];
+    objective = {
+        x: room.x + room.width / 2,
+        y: room.y + room.height / 2,
+        radius: 34,
+        health: 220 + game.wave * 25,
+        maxHealth: 220 + game.wave * 25
+    };
+    updateHUD();
+    showObjectiveAnnouncement();
+}
+
+// Desenha o cristal da missão e sua barra de vida.
+function drawObjective(context) {
+    if (!objective) return;
+
+    const x = objective.x - camera.x;
+    const y = objective.y - camera.y;
+    const pulse = 1 + Math.sin(performance.now() / 180) * 0.08;
+
+    context.save();
+    context.translate(x, y);
+    context.rotate(performance.now() / 1200);
+    context.fillStyle = '#35dfff';
+    context.shadowColor = '#00aaff';
+    context.shadowBlur = 24;
+    context.beginPath();
+    context.moveTo(0, -objective.radius * pulse);
+    context.lineTo(objective.radius * 0.7 * pulse, 0);
+    context.lineTo(0, objective.radius * pulse);
+    context.lineTo(-objective.radius * 0.7 * pulse, 0);
+    context.closePath();
+    context.fill();
+    context.restore();
+
+    context.fillStyle = '#17222b';
+    context.fillRect(x - 38, y - 58, 76, 7);
+    context.fillStyle = '#35dfff';
+    context.fillRect(x - 38, y - 58, 76 * Math.max(0, objective.health / objective.maxHealth), 7);
+}
+
+// Coloca itens de recuperação nas salas entre as ondas.
+function spawnWavePickups() {
+    pickups = [];
+    const sideRoom = dungeon.rooms[(game.wave - 1) % dungeon.rooms.length];
+    pickups.push(new Pickup(
+        sideRoom.x + sideRoom.width / 2,
+        sideRoom.y + sideRoom.height / 2,
+        game.wave % 2 === 0 ? 'health' : 'mana',
+        game.wave >= 5
+    ));
+
+    if (game.wave >= 5) {
+        const rewardRoom = dungeon.rooms[(game.wave + 1) % dungeon.rooms.length];
+        pickups.push(new Pickup(
+            rewardRoom.x + rewardRoom.width / 2,
+            rewardRoom.y + rewardRoom.height / 2,
+            game.wave % 2 === 0 ? 'mana' : 'health',
+            true
+        ));
+    }
+}
+
+// Aponta para inimigos que estão fora da área atualmente visível.
+function drawOffscreenIndicators(context) {
+    enemies.forEach(enemy => {
+        const screenX = enemy.x - camera.x;
+        const screenY = enemy.y - camera.y;
+        const margin = 28;
+        if (screenX >= margin && screenX <= viewport.width - margin
+            && screenY >= margin && screenY <= viewport.height - margin) return;
+
+        const centerX = viewport.width / 2;
+        const centerY = viewport.height / 2;
+        const directionX = screenX - centerX;
+        const directionY = screenY - centerY;
+        const scale = Math.min(
+            (viewport.width / 2 - margin) / Math.abs(directionX || 1),
+            (viewport.height / 2 - margin) / Math.abs(directionY || 1)
+        );
+        const indicatorX = centerX + directionX * scale;
+        const indicatorY = centerY + directionY * scale;
+        const angle = Math.atan2(directionY, directionX);
+
+        context.save();
+        context.translate(indicatorX, indicatorY);
+        context.rotate(angle);
+        context.fillStyle = enemy.maxHealth ? '#ff496c' : '#ffcc55';
+        context.beginPath();
+        context.moveTo(10, 0);
+        context.lineTo(-7, -7);
+        context.lineTo(-4, 0);
+        context.lineTo(-7, 7);
+        context.closePath();
+        context.fill();
+        context.restore();
+    });
+}
+
+// Pausa a progressão para o jogador selecionar um aprimoramento.
+function showUpgradeScreen() {
+    game.state = 'upgrade';
+    document.getElementById('upgrade-wave').innerText = game.wave;
+
+    const availableUpgrades = upgradePool.filter(upgrade => !upgrade.available || upgrade.available());
+    const options = availableUpgrades
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+    const container = document.getElementById('upgrade-options');
+    container.innerHTML = '';
+
+    options.forEach(upgrade => {
+        const button = document.createElement('button');
+        button.className = 'upgrade-option';
+        button.innerHTML = `<strong>${upgrade.title}</strong><span>${upgrade.description}</span>`;
+        button.addEventListener('click', () => {
+            upgrade.apply();
+            updateHUD();
+            document.getElementById('upgrade-screen').style.display = 'none';
+            game.state = 'playing';
+            game.lastTime = performance.now();
+            scheduleGameLoop();
+        });
+        container.appendChild(button);
+    });
+
+    document.getElementById('upgrade-screen').style.display = 'block';
+}
+
+// Registra pontuação e exibe os resultados quando o jogador perde.
+function gameOver() {
+    if (game.state !== 'playing') return;
+    game.state = 'gameover';
+    const bestScore = saveBestScore();
+    document.getElementById('game-over').style.display = 'block';
+    document.getElementById('final-wave').innerText = game.wave;
+    document.getElementById('final-kills').innerText = game.kills;
+    document.getElementById('final-score').innerText = game.score.toLocaleString('pt-BR');
+    document.getElementById('final-best-score').innerText = bestScore.toLocaleString('pt-BR');
+}
+
+// Registra pontuação e exibe os resultados ao concluir todas as ondas.
+function victory() {
+    game.state = 'victory';
+    const bestScore = saveBestScore();
+    document.getElementById('victory-kills').innerText = game.kills;
+    document.getElementById('victory-score').innerText = game.score.toLocaleString('pt-BR');
+    document.getElementById('victory-best-score').innerText = bestScore.toLocaleString('pt-BR');
+    document.getElementById('victory-screen').style.display = 'block';
+}
+
+// Inicia uma nova partida a partir da tela inicial.
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    game.state = 'playing';
+    game.lastTime = performance.now();
+    showObjectiveAnnouncement();
+    scheduleGameLoop();
+}
+
+// Alterna entre os estados de jogo e pausa, sem pausar menus de resultado.
+function togglePause() {
+    if (game.state !== 'playing' && game.state !== 'paused') return;
+    game.state = game.state === 'paused' ? 'playing' : 'paused';
+    document.getElementById('pause-screen').style.display = game.state === 'paused' ? 'block' : 'none';
+    if (game.state === 'playing') {
+        game.lastTime = performance.now();
+        scheduleGameLoop();
+    }
+}
+
+// Reinicia os atributos, entidades, pontuação e estado para uma nova partida.
+function resetGame() {
+    player = new Player();
+    bullets = [];
+    enemies = [];
+    enemyProjectiles = [];
+    objective = null;
+    pickups = [];
+    game.score = 0;
+    damageOverlayStrength = 0;
+    clearTimeout(objectiveAnnouncementTimer);
+    const objectivePanel = document.getElementById('objective-panel');
+    objectivePanel.classList.remove('objective-announcement');
+    objectivePanel.classList.add('objective-compact');
+    objectiveAnnouncementShown = false;
+    particles = [];
+    bloodStains = [];
+    impacts = [];
+    game.kills = 0;
+    game.wave = 1;
+    game.enemiesToSpawn = 10;
+    game.spawnTimer = 0;
+    game.lastTime = 0;
+    game.state = 'playing';
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('pause-screen').style.display = 'none';
+    document.getElementById('victory-screen').style.display = 'none';
+    document.getElementById('upgrade-screen').style.display = 'none';
+    updateHUD();
+    showObjectiveAnnouncement();
+    scheduleGameLoop();
+}
+
+// Garante que apenas um quadro de animação do jogo fique agendado por vez.
+function scheduleGameLoop() {
+    if (game.animationFrameId !== null) return;
+
+    game.animationFrameId = requestAnimationFrame(timestamp => {
+        game.animationFrameId = null;
+        gameLoop(timestamp);
+    });
+}
+
+// Atualiza a simulação e redesenha o mundo, efeitos de luz, HUD e minimapa.
+function gameLoop(timestamp) {
+    if (game.state === 'menu' || game.state === 'gameover' || game.state === 'victory') return;
+    if (game.state === 'paused' || game.state === 'upgrade') return;
+    
+    const dt = Math.min((timestamp - game.lastTime) / 1000 || 0, 0.05);
+    game.lastTime = timestamp;
+    updateDamageOverlay(dt);
+
+    if (game.enemiesToSpawn > 0) {
+        // Controla o intervalo de surgimento dos inimigos da onda.
+        game.spawnTimer -= dt;
+        if (game.spawnTimer <= 0) {
+            spawnEnemy();
+            game.spawnTimer = Math.max(0.2, 1.5 - (game.wave * 0.1));
+        }
+    } else if (enemies.length === 0 && !objective) {
+        // Concede recompensa, prepara a próxima onda e oferece um aprimoramento.
+        game.score += game.wave * 250;
+        if (game.wave >= game.maxWave) {
+            updateHUD();
+            victory();
+            return;
+        }
+        game.wave++;
+        game.enemiesToSpawn = 10 + (game.wave * 5);
+        player.health = Math.min(player.maxHealth, player.health + 25); 
+        setupWaveObjective();
+        spawnWavePickups();
+        updateHUD();
+        showUpgradeScreen();
+        return;
+    }
+
+    player.update(dt);
+    camera.x = player.x - viewport.width / 2;
+    camera.y = player.y - viewport.height / 2;
+
+    // Move os disparos do jogador e resolve impactos com objetivos e paredes.
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.update(dt);
+        const hitsObjective = objective
+            && Math.hypot(b.x - objective.x, b.y - objective.y) < objective.radius + 6;
+        const hitWall = dungeon.walls.some(wall => circleTouchesWall(b.x, b.y, 6, wall));
+        if (hitsObjective) {
+            objective.health -= b.damage;
+            impacts.push(new ImpactEffect(b.x, b.y));
+            bullets.splice(i, 1);
+            if (objective.health <= 0) {
+                objective = null;
+                const objectivePanel = document.getElementById('objective-panel');
+                objectivePanel.classList.remove('objective-announcement');
+                objectivePanel.classList.add('objective-compact');
+                updateHUD();
+            }
+        } else if (hitWall) {
+            impacts.push(new ImpactEffect(b.x, b.y));
+            bullets.splice(i, 1);
+        } else if (b.life <= 0) {
+            bullets.splice(i, 1);
+        }
+    }
+
+    // Atualiza inimigos, aplica dano dos disparos e processa derrotas.
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        e.update(dt);
+        
+        for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            const dx = b.x - e.x;
+            const dy = b.y - e.y;
+            
+            const hitRadius = e.radius + 6;
+            if (dx * dx + dy * dy < hitRadius * hitRadius) {
+                e.health -= b.damage;
+                e.hitTimer = 0.2; 
+                bullets.splice(j, 1);
+                createBlood(b.x, b.y); 
+                impacts.push(new ImpactEffect(b.x, b.y));
+                
+                if (e.health <= 0) {
+                    game.kills++;
+                    game.score += getEnemyScore(e);
+                    e.onDeath?.();
+                    updateHUD();
+                    enemies.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    // Move os projéteis inimigos e detecta acertos no jogador ou em paredes.
+    for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+        const projectile = enemyProjectiles[i];
+        projectile.update(dt);
+        const hitWall = dungeon.walls.some(wall =>
+            circleTouchesWall(projectile.x, projectile.y, projectile.radius, wall)
+        );
+        const hitsPlayer = Math.hypot(projectile.x - player.x, projectile.y - player.y)
+            < projectile.radius + player.radius;
+
+        if (hitsPlayer) {
+            applyPlayerDamage(12);
+            impacts.push(new ImpactEffect(projectile.x, projectile.y));
+            enemyProjectiles.splice(i, 1);
+        } else if (hitWall || projectile.life <= 0) {
+            enemyProjectiles.splice(i, 1);
+        }
+    }
+
+    // Coleta itens e remove partículas e impactos que já expiraram.
+    for (let i = pickups.length - 1; i >= 0; i--) {
+        if (pickups[i].update(dt)) pickups.splice(i, 1);
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update(dt);
+        if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+
+    for (let i = impacts.length - 1; i >= 0; i--) {
+        impacts[i].update(dt);
+        if (impacts[i].life <= 0) impacts.splice(i, 1);
+    }
+
+    // Desenha o cenário e as entidades em ordem de profundidade.
+    ctx.globalCompositeOperation = 'source-over';
+    drawDungeon(ctx);
+
+    bloodStains.forEach(b => {
+        ctx.fillStyle = `rgba(74, 21, 75, ${b.alpha})`; 
+        ctx.beginPath(); ctx.arc(b.x - camera.x, b.y - camera.y, b.size, 0, Math.PI * 2); ctx.fill();
+    });
+    
+    enemies.sort((a, b) => a.y - b.y);
+    pickups.forEach(pickup => pickup.draw(ctx));
+    enemies.forEach(e => e.draw(ctx));
+    drawObjective(ctx);
+    player.draw(ctx);
+    bullets.forEach(b => b.draw(ctx));
+    enemyProjectiles.forEach(projectile => projectile.draw(ctx));
+    particles.forEach(p => p.draw(ctx));
+    impacts.forEach(impact => impact.draw(ctx));
+
+    // Aplica a iluminação ao redor do jogador e redesenha indicadores e minimapa.
+    lightCtx.globalCompositeOperation = 'source-over';
+    lightCtx.clearRect(0, 0, lightCanvas.width, lightCanvas.height);
+    lightCtx.fillStyle = 'rgba(5, 5, 12, 0.85)'; 
+    lightCtx.fillRect(0, 0, viewport.width, viewport.height);
+
+    lightCtx.globalCompositeOperation = 'destination-out';
+    
+    let magicGlow = lightCtx.createRadialGradient(
+        player.x - camera.x, player.y - camera.y, 30,
+        player.x - camera.x, player.y - camera.y, 450
+    );
+    magicGlow.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    magicGlow.addColorStop(0.3, 'rgba(255, 255, 255, 0.7)');
+    magicGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    lightCtx.fillStyle = magicGlow;
+    lightCtx.beginPath();
+    lightCtx.arc(player.x - camera.x, player.y - camera.y, 450, 0, Math.PI * 2);
+    lightCtx.fill();
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(lightCanvas, 0, 0, viewport.width, viewport.height);
+    drawOffscreenIndicators(ctx);
+    drawMinimap();
+    
+    scheduleGameLoop();
+}
+
+updateHUD();
+</script>
+</body>
+</html>
