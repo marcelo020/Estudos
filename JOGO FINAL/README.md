@@ -37,4 +37,4 @@ Como o projeto é construído em tecnologias web nativas, não há necessidade d
 
 1. Clone o repositório:
 ```bash
-git clone [https://github.com/marcelo020/](https://github.com/marcelo020/)[nome-do-repositorio].git
+git clone [https://github.com/marcelo020/](https://github.com/marcelo020/).git
