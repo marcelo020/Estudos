@@ -1,18 +1,5 @@
 # ⚔️ VandGuard
 
-<div align="center">
-  <!-- Substitua o link abaixo por um GIF ou imagem real do seu jogo rodando -->
-  <img src="https://via.placeholder.com/600x300?text=GIF+ou+Screenshot+do+Jogo" alt="Demonstração do Gameplay" width="600">
-  
-  <br>
-  <i>Um action survival 2D top-down construído do zero no navegador.</i>
-  <br><br>
-  
-  <a href="https://[seu-usuario].github.io/[nome-do-repositorio]/" target="_blank">
-    <img src="https://img.shields.io/badge/Jogar_Agora-Acesse_a_Demo-2ea44f?style=for-the-badge" alt="Jogar Agora">
-  </a>
-</div>
-
 ## 🎮 Sobre o Projeto
 
 O **VandGuard** é um jogo de ação e sobrevivência 2D com visão top-down, onde o jogador precisa resistir a hordas crescentes de inimigos utilizando movimentação estratégica e ataques mágicos. O diferencial deste projeto é que ele foi desenvolvido inteiramente com Vanilla JavaScript e **HTML5 Canvas**, sem a utilização de engines de jogos prontas (como Unity ou Godot). 
